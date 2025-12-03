@@ -1,0 +1,427 @@
+// filepath: lib/app/modules/auth/register_driver/controllers/register_driver_controller.dart
+import 'package:flutter/material.dart';
+import 'package:get/get.dart';
+import 'package:image_picker/image_picker.dart';
+import '../../../../data/models/user.dart';
+import '../../../../data/models/driver.dart';
+import '../../../../data/services/auth_service.dart';
+
+class RegisterDriverController extends GetxController {
+  final AuthService _authService = Get.find<AuthService>();
+  final ImagePicker _imagePicker = ImagePicker();
+
+  // Observable variables for multi-step form
+  final currentStep = 0.obs;
+  final isLoading = false.obs;
+
+  // Step 1: Personal Information
+  final nameController = TextEditingController();
+  final emailController = TextEditingController();
+  final phoneController = TextEditingController();
+  final passwordController = TextEditingController();
+  final confirmPasswordController = TextEditingController();
+  final profileImagePath = ''.obs;
+
+  // Step 2: Vehicle Information
+  final makeController = TextEditingController();
+  final modelController = TextEditingController();
+  final yearController = TextEditingController();
+  final colorController = TextEditingController();
+  final licensePlateController = TextEditingController();
+  final vinController = TextEditingController();
+  final selectedVehicleType = VehicleType.car.obs;
+  final vehiclePhotos = <String>[].obs;
+
+  // Step 3: Documents
+  final driverLicenseNumber = TextEditingController();
+  final vehicleRegistrationNumber = TextEditingController();
+  final insuranceNumber = TextEditingController();
+  final driverLicenseExpiry = Rx<DateTime?>(null);
+  final vehicleRegistrationExpiry = Rx<DateTime?>(null);
+  final insuranceExpiry = Rx<DateTime?>(null);
+  final driverLicenseImage = ''.obs;
+  final vehicleRegistrationImage = ''.obs;
+  final insuranceImage = ''.obs;
+
+  // Form keys for validation
+  final step1FormKey = GlobalKey<FormState>();
+  final step2FormKey = GlobalKey<FormState>();
+  final step3FormKey = GlobalKey<FormState>();
+
+  // Agreement acceptance
+  final termsAccepted = false.obs;
+  final privacyAccepted = false.obs;
+
+  @override
+  void onInit() {
+    super.onInit();
+    _initializeControllers();
+  }
+
+  void _initializeControllers() {
+    // Pre-fill email if coming from role selection
+    final args = Get.arguments;
+    if (args != null && args['email'] != null) {
+      emailController.text = args['email'];
+    }
+  }
+
+  @override
+  void onClose() {
+    _disposeControllers();
+    super.onClose();
+  }
+
+  void _disposeControllers() {
+    nameController.dispose();
+    emailController.dispose();
+    phoneController.dispose();
+    passwordController.dispose();
+    confirmPasswordController.dispose();
+    makeController.dispose();
+    modelController.dispose();
+    yearController.dispose();
+    colorController.dispose();
+    licensePlateController.dispose();
+    vinController.dispose();
+    driverLicenseNumber.dispose();
+    vehicleRegistrationNumber.dispose();
+    insuranceNumber.dispose();
+  }
+
+  // Navigation methods
+  void nextStep() {
+    if (currentStep.value < 2) {
+      if (_validateCurrentStep()) {
+        currentStep.value++;
+      }
+    } else {
+      _submitRegistration();
+    }
+  }
+
+  void previousStep() {
+    if (currentStep.value > 0) {
+      currentStep.value--;
+    }
+  }
+
+  void goToStep(int step) {
+    if (step >= 0 && step <= 2) {
+      currentStep.value = step;
+    }
+  }
+
+  // Validation methods
+  bool _validateCurrentStep() {
+    switch (currentStep.value) {
+      case 0:
+        return _validateStep1();
+      case 1:
+        return _validateStep2();
+      case 2:
+        return _validateStep3();
+      default:
+        return false;
+    }
+  }
+
+  bool _validateStep1() {
+    if (!step1FormKey.currentState!.validate()) {
+      return false;
+    }
+    if (passwordController.text != confirmPasswordController.text) {
+      Get.snackbar(
+        'Error',
+        'Passwords do not match',
+        backgroundColor: Colors.red,
+        colorText: Colors.white,
+      );
+      return false;
+    }
+
+    return true;
+  }
+
+  bool _validateStep2() {
+    if (!step2FormKey.currentState!.validate()) {
+      return false;
+    }
+    if (vehiclePhotos.isEmpty) {
+      Get.snackbar(
+        'Error',
+        'Please add at least one vehicle photo',
+        backgroundColor: Colors.red,
+        colorText: Colors.white,
+      );
+      return false;
+    }
+
+    return true;
+  }
+
+  bool _validateStep3() {
+    if (!step3FormKey.currentState!.validate()) {
+      return false;
+    }
+    if (driverLicenseExpiry.value == null ||
+        vehicleRegistrationExpiry.value == null ||
+        insuranceExpiry.value == null) {
+      Get.snackbar(
+        'Error',
+        'Please set all document expiry dates',
+        backgroundColor: Colors.red,
+        colorText: Colors.white,
+      );
+      return false;
+    }
+    if (driverLicenseImage.value.isEmpty ||
+        vehicleRegistrationImage.value.isEmpty ||
+        insuranceImage.value.isEmpty) {
+      Get.snackbar(
+        'Error',
+        'Please upload all required documents',
+        backgroundColor: Colors.red,
+        colorText: Colors.white,
+      );
+      return false;
+    }
+
+    if (!termsAccepted.value || !privacyAccepted.value) {
+      Get.snackbar(
+        'Error',
+        'Please accept terms and privacy policy',
+        backgroundColor: Colors.red,
+        colorText: Colors.white,
+      );
+      return false;
+    }
+
+    return true;
+  }
+
+  // Image picker methods
+  Future<void> pickProfileImage() async {
+    try {
+      final XFile? image = await _imagePicker.pickImage(
+        source: ImageSource.gallery,
+        maxWidth: 512,
+        maxHeight: 512,
+        imageQuality: 80,
+      );
+      if (image != null) {
+        profileImagePath.value = image.path;
+      }
+    } catch (e) {
+      Get.snackbar(
+        'Error',
+        'Failed to pick image: $e',
+        backgroundColor: Colors.red,
+        colorText: Colors.white,
+      );
+    }
+  }
+
+  Future<void> pickVehiclePhoto() async {
+    try {
+      final XFile? image = await _imagePicker.pickImage(
+        source: ImageSource.gallery,
+        maxWidth: 1024,
+        maxHeight: 1024,
+        imageQuality: 85,
+      );
+      if (image != null) {
+        vehiclePhotos.add(image.path);
+      }
+    } catch (e) {
+      Get.snackbar(
+        'Error',
+        'Failed to pick image: $e',
+        backgroundColor: Colors.red,
+        colorText: Colors.white,
+      );
+    }
+  }
+
+  void removeVehiclePhoto(int index) {
+    if (index >= 0 && index < vehiclePhotos.length) {
+      vehiclePhotos.removeAt(index);
+    }
+  }
+
+  Future<void> pickDocumentImage(String documentType) async {
+    try {
+      final XFile? image = await _imagePicker.pickImage(
+        source: ImageSource.camera,
+        maxWidth: 1024,
+        maxHeight: 1024,
+        imageQuality: 90,
+      );
+
+      if (image != null) {
+        switch (documentType) {
+          case 'license':
+            driverLicenseImage.value = image.path;
+            break;
+          case 'registration':
+            vehicleRegistrationImage.value = image.path;
+            break;
+          case 'insurance':
+            insuranceImage.value = image.path;
+            break;
+        }
+      }
+    } catch (e) {
+      Get.snackbar(
+        'Error',
+        'Failed to pick image: $e',
+        backgroundColor: Colors.red,
+        colorText: Colors.white,
+      );
+    }
+  }
+
+  // Date picker method
+  Future<void> pickDate(String documentType) async {
+    final DateTime? picked = await showDatePicker(
+      context: Get.context!,
+      initialDate: DateTime.now().add(const Duration(days: 365)),
+      firstDate: DateTime.now(),
+      lastDate: DateTime.now().add(const Duration(days: 3650)),
+    );
+
+    if (picked != null) {
+      switch (documentType) {
+        case 'license':
+          driverLicenseExpiry.value = picked;
+          break;
+        case 'registration':
+          vehicleRegistrationExpiry.value = picked;
+          break;
+        case 'insurance':
+          insuranceExpiry.value = picked;
+          break;
+      }
+    }
+  }
+
+  // Submit registration
+  Future<void> _submitRegistration() async {
+    try {
+      isLoading.value = true;
+
+      // Create user data
+      final userData = {
+        'name': nameController.text,
+        'email': emailController.text,
+        'phone': phoneController.text,
+        'password': passwordController.text,
+        'user_type': UserType.driver.name,
+        'profile_image': profileImagePath.value.isEmpty
+            ? null
+            : profileImagePath.value,
+      };
+
+      // Create vehicle info
+      final vehicleInfo = VehicleInfo(
+        make: makeController.text,
+        model: modelController.text,
+        year: yearController.text,
+        color: colorController.text,
+        licensePlate: licensePlateController.text,
+        type: selectedVehicleType.value,
+        vin: vinController.text.isEmpty ? null : vinController.text,
+        photos: vehiclePhotos.toList(),
+      );
+
+      // Create documents
+      final documents = DriverDocuments(
+        driverLicense: DocumentInfo(
+          number: driverLicenseNumber.text,
+          expiryDate: driverLicenseExpiry.value!,
+          imageUrl: driverLicenseImage.value,
+          status: DocumentStatus.pending,
+        ),
+        vehicleRegistration: DocumentInfo(
+          number: vehicleRegistrationNumber.text,
+          expiryDate: vehicleRegistrationExpiry.value!,
+          imageUrl: vehicleRegistrationImage.value,
+          status: DocumentStatus.pending,
+        ),
+        insurance: DocumentInfo(
+          number: insuranceNumber.text,
+          expiryDate: insuranceExpiry.value!,
+          imageUrl: insuranceImage.value,
+          status: DocumentStatus.pending,
+        ),
+      );
+
+      // Create driver data
+      final driverData = {
+        'vehicle_info': vehicleInfo.toJson(),
+        'documents': documents.toJson(),
+        'status': DriverStatus.pending.name,
+      };
+      // Register user and driver
+      await _authService.registerDriver(userData, driverData);
+
+      Get.snackbar(
+        'Success',
+        'Registration submitted successfully! We will review your application.',
+        backgroundColor: Colors.green,
+        colorText: Colors.white,
+      );
+
+      // Navigate to login or pending approval screen
+      Get.offAllNamed('/login');
+    } catch (e) {
+      Get.snackbar(
+        'Error',
+        'Registration failed: $e',
+        backgroundColor: Colors.red,
+        colorText: Colors.white,
+      );
+    } finally {
+      isLoading.value = false;
+    }
+  }
+
+  // Helper methods
+  String get stepTitle {
+    switch (currentStep.value) {
+      case 0:
+        return 'Personal Information';
+      case 1:
+        return 'Vehicle Information';
+      case 2:
+        return 'Documents & Verification';
+      default:
+        return '';
+    }
+  }
+
+  String get stepDescription {
+    switch (currentStep.value) {
+      case 0:
+        return 'Enter your personal details';
+      case 1:
+        return 'Add your vehicle information';
+      case 2:
+        return 'Upload required documents';
+      default:
+        return '';
+    }
+  }
+
+  double get progress => (currentStep.value + 1) / 3;
+
+  bool get isLastStep => currentStep.value == 2;
+  bool get isFirstStep => currentStep.value == 0;
+
+  String get nextButtonText {
+    if (isLastStep) {
+      return 'Submit Registration';
+    }
+    return 'Continue';
+  }
+}
