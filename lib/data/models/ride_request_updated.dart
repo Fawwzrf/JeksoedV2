@@ -1,170 +1,147 @@
 // filepath: lib/data/models/ride_request.dart
 
-import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 
 class RideRequest {
   final String id;
-  final String passengerId;
-  final String passengerName;
-  final double passengerRating;
-  final String passengerPhone;
-  final LatLng pickupLocation;
-  final LatLng destinationLocation;
-  final String pickupAddress;
-  final String destinationAddress;
-  final double distance;
-  final int duration; // in minutes
-  final int fare;
-  final String status; // pending, accepted, rejected, completed, cancelled
+  final String? passengerId;
   final String? driverId;
-  final DateTime? createdAt;
+  final double? pickupLat;
+  final double? pickupLng;
+  final String? pickupAddress;
+  final double? destLat;
+  final double? destLng;
+  final String? destAddress;
+  final String? rideType;
+  final String? paymentMethod;
+  final String status;
+  final double? fare;
+  final double? distance;
+  final double? duration;
+  final String? notes;
+  final DateTime createdAt;
   final DateTime? acceptedAt;
+  final DateTime? startedAt;
   final DateTime? completedAt;
-  final String rideType; // motor, car, etc.
-  final String paymentMethod;
-  final String? encodedPolyline;
+  final DateTime? cancelledAt;
   final int? rating;
+  final String? reviewComment;
 
   RideRequest({
     required this.id,
-    required this.passengerId,
-    required this.passengerName,
-    required this.passengerRating,
-    required this.passengerPhone,
-    required this.pickupLocation,
-    required this.destinationLocation,
-    required this.pickupAddress,
-    required this.destinationAddress,
-    required this.distance,
-    required this.duration,
-    required this.fare,
-    required this.status,
+    this.passengerId,
     this.driverId,
-    this.createdAt,
+    this.pickupLat,
+    this.pickupLng,
+    this.pickupAddress,
+    this.destLat,
+    this.destLng,
+    this.destAddress,
+    this.rideType,
+    this.paymentMethod,
+    this.status = 'requested',
+    this.fare,
+    this.distance,
+    this.duration,
+    this.notes,
+    required this.createdAt,
     this.acceptedAt,
+    this.startedAt,
     this.completedAt,
-    required this.rideType,
-    required this.paymentMethod,
-    this.encodedPolyline,
+    this.cancelledAt,
     this.rating,
+    this.reviewComment,
   });
 
-  factory RideRequest.fromMap(Map<String, dynamic> data, String id) {
+  static DateTime _parseDate(dynamic v) {
+    if (v == null) return DateTime.fromMillisecondsSinceEpoch(0);
+    if (v is DateTime) return v;
+    if (v is int) return DateTime.fromMillisecondsSinceEpoch(v);
+    if (v is String) {
+      final s = v.trim();
+      if (s.isEmpty) return DateTime.fromMillisecondsSinceEpoch(0);
+      try {
+        return DateTime.parse(s);
+      } catch (_) {}
+      try {
+        return DateTime.fromMillisecondsSinceEpoch(int.parse(s));
+      } catch (_) {}
+    }
+    return DateTime.fromMillisecondsSinceEpoch(0);
+  }
+
+  static DateTime? _parseNullableDate(dynamic v) {
+    if (v == null) return null;
+    final d = _parseDate(v);
+    if (d.millisecondsSinceEpoch == 0) return null;
+    return d;
+  }
+
+  factory RideRequest.fromJson(Map<String, dynamic> json) {
+    final m = Map<String, dynamic>.from(json);
+
+    double? _toDouble(dynamic x) {
+      if (x == null) return null;
+      if (x is double) return x;
+      if (x is int) return x.toDouble();
+      return double.tryParse(x.toString());
+    }
+
     return RideRequest(
-      id: id,
-      passengerId: data['passengerId'] ?? '',
-      passengerName: data['passengerName'] ?? 'Unknown',
-      passengerRating: (data['passengerRating'] ?? 0.0).toDouble(),
-      passengerPhone: data['passengerPhone'] ?? '',
-      pickupLocation: LatLng(
-        (data['pickupLocation']['latitude'] ?? 0.0).toDouble(),
-        (data['pickupLocation']['longitude'] ?? 0.0).toDouble(),
+      id: (m['id'] ?? m['ride_id'] ?? m['request_id'] ?? '').toString(),
+      passengerId: (m['passenger_id'] ?? m['passengerId'])?.toString(),
+      driverId: (m['driver_id'] ?? m['driverId'])?.toString(),
+      pickupLat: _toDouble(m['pickup_lat'] ?? m['pickupLat']),
+      pickupLng: _toDouble(m['pickup_lng'] ?? m['pickupLng']),
+      pickupAddress: (m['pickup_address'] ?? m['pickupAddress'])?.toString(),
+      destLat: _toDouble(m['dest_lat'] ?? m['destLat']),
+      destLng: _toDouble(m['dest_lng'] ?? m['destLng']),
+      destAddress: (m['dest_address'] ?? m['destAddress'])?.toString(),
+      rideType: (m['ride_type'] ?? m['rideType'])?.toString(),
+      paymentMethod: (m['payment_method'] ?? m['paymentMethod'])?.toString(),
+      status: (m['status'] ?? 'requested').toString(),
+      fare: _toDouble(m['fare']),
+      distance: _toDouble(m['distance']),
+      duration: _toDouble(m['duration']),
+      notes: (m['notes'] ?? m['note'])?.toString(),
+      createdAt: _parseDate(
+        m['created_at'] ?? m['createdAt'] ?? m['createdAtIso'],
       ),
-      destinationLocation: LatLng(
-        (data['destinationLocation']['latitude'] ?? 0.0).toDouble(),
-        (data['destinationLocation']['longitude'] ?? 0.0).toDouble(),
-      ),
-      pickupAddress: data['pickupAddress'] ?? '',
-      destinationAddress: data['destinationAddress'] ?? '',
-      distance: (data['distance'] ?? 0.0).toDouble(),
-      duration: (data['duration'] ?? 0).toInt(),
-      fare: (data['fare'] ?? 0).toInt(),
-      status: data['status'] ?? 'pending',
-      driverId: data['driverId'],
-      createdAt: (data['createdAt'] as Timestamp?)?.toDate(),
-      acceptedAt: (data['acceptedAt'] as Timestamp?)?.toDate(),
-      completedAt: (data['completedAt'] as Timestamp?)?.toDate(),
-      rideType: data['rideType'] ?? 'motor',
-      paymentMethod: data['paymentMethod'] ?? 'cash',
-      encodedPolyline: data['encodedPolyline'],
-      rating: (data['rating'] as int?),
+      acceptedAt: _parseNullableDate(m['accepted_at'] ?? m['acceptedAt']),
+      startedAt: _parseNullableDate(m['started_at'] ?? m['startedAt']),
+      completedAt: _parseNullableDate(m['completed_at'] ?? m['completedAt']),
+      cancelledAt: _parseNullableDate(m['cancelled_at'] ?? m['cancelledAt']),
+      rating: m['rating'] != null ? int.tryParse(m['rating'].toString()) : null,
+      reviewComment: (m['review_comment'] ?? m['reviewComment'])?.toString(),
     );
   }
 
-  Map<String, dynamic> toMap() {
+  Map<String, dynamic> toJson() {
     return {
-      'passengerId': passengerId,
-      'passengerName': passengerName,
-      'passengerRating': passengerRating,
-      'passengerPhone': passengerPhone,
-      'pickupLocation': {
-        'latitude': pickupLocation.latitude,
-        'longitude': pickupLocation.longitude,
-      },
-      'destinationLocation': {
-        'latitude': destinationLocation.latitude,
-        'longitude': destinationLocation.longitude,
-      },
-      'pickupAddress': pickupAddress,
-      'destinationAddress': destinationAddress,
+      'id': id,
+      'passenger_id': passengerId,
+      'driver_id': driverId,
+      'pickup_lat': pickupLat,
+      'pickup_lng': pickupLng,
+      'pickup_address': pickupAddress,
+      'dest_lat': destLat,
+      'dest_lng': destLng,
+      'dest_address': destAddress,
+      'ride_type': rideType,
+      'payment_method': paymentMethod,
+      'status': status,
+      'fare': fare,
       'distance': distance,
       'duration': duration,
-      'fare': fare,
-      'status': status,
-      'driverId': driverId,
-      'createdAt': createdAt != null ? Timestamp.fromDate(createdAt!) : null,
-      'acceptedAt': acceptedAt != null ? Timestamp.fromDate(acceptedAt!) : null,
-      'completedAt': completedAt != null
-          ? Timestamp.fromDate(completedAt!)
-          : null,
-      'rideType': rideType,
-      'paymentMethod': paymentMethod,
-      'encodedPolyline': encodedPolyline,
+      'notes': notes,
+      'created_at': createdAt.toIso8601String(),
+      'accepted_at': acceptedAt?.toIso8601String(),
+      'started_at': startedAt?.toIso8601String(),
+      'completed_at': completedAt?.toIso8601String(),
+      'cancelled_at': cancelledAt?.toIso8601String(),
       'rating': rating,
+      'review_comment': reviewComment,
     };
-  }
-
-  RideRequest copyWith({
-    String? id,
-    String? passengerId,
-    String? passengerName,
-    double? passengerRating,
-    String? passengerPhone,
-    LatLng? pickupLocation,
-    LatLng? destinationLocation,
-    String? pickupAddress,
-    String? destinationAddress,
-    double? distance,
-    int? duration,
-    int? fare,
-    String? status,
-    String? driverId,
-    DateTime? createdAt,
-    DateTime? acceptedAt,
-    DateTime? completedAt,
-    String? rideType,
-    String? paymentMethod,
-    String? encodedPolyline,
-    int? rating,
-  }) {
-    return RideRequest(
-      id: id ?? this.id,
-      passengerId: passengerId ?? this.passengerId,
-      passengerName: passengerName ?? this.passengerName,
-      passengerRating: passengerRating ?? this.passengerRating,
-      passengerPhone: passengerPhone ?? this.passengerPhone,
-      pickupLocation: pickupLocation ?? this.pickupLocation,
-      destinationLocation: destinationLocation ?? this.destinationLocation,
-      pickupAddress: pickupAddress ?? this.pickupAddress,
-      destinationAddress: destinationAddress ?? this.destinationAddress,
-      distance: distance ?? this.distance,
-      duration: duration ?? this.duration,
-      fare: fare ?? this.fare,
-      status: status ?? this.status,
-      driverId: driverId ?? this.driverId,
-      createdAt: createdAt ?? this.createdAt,
-      acceptedAt: acceptedAt ?? this.acceptedAt,
-      completedAt: completedAt ?? this.completedAt,
-      rideType: rideType ?? this.rideType,
-      paymentMethod: paymentMethod ?? this.paymentMethod,
-      encodedPolyline: encodedPolyline ?? this.encodedPolyline,
-      rating: rating ?? this.rating,
-    );
-  }
-
-  @override
-  String toString() {
-    return 'RideRequest(id: $id, passengerName: $passengerName, status: $status, fare: $fare)';
   }
 }

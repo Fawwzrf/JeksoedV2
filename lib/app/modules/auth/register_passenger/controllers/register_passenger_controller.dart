@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
-// import 'package:firebase_auth/firebase_auth.dart'; // For production use
-// import 'package:cloud_firestore/cloud_firestore.dart'; // For production use
+import '../../../../data/services/auth_service.dart';
 import '../../../../routes/app_pages.dart';
 
 class RegisterPassengerController extends GetxController {
@@ -28,41 +27,23 @@ class RegisterPassengerController extends GetxController {
     try {
       isLoading.value = true;
 
-      // Simulasi registrasi untuk preview
-      await Future.delayed(Duration(milliseconds: 1500));
-
-      Get.snackbar(
-        "Success",
-        "Registrasi berhasil! Selamat datang ${nameC.text}",
+      final success = await AuthService.to.registerPassenger(
+        name: nameC.text,
+        nim: nimC.text,
+        email: emailC.text,
+        phone: phoneC.text,
+        password: passwordC.text,
       );
-      Get.offAllNamed(Routes.passengerMain);
 
-      /* Original Firebase registration - uncomment for production
-      UserCredential userCred = await FirebaseAuth.instance
-          .createUserWithEmailAndPassword(
-            email: emailC.text,
-            password: passwordC.text,
-          );
-
-      String uid = userCred.user!.uid;
-
-      // Simpan data ke Firestore
-      await FirebaseFirestore.instance.collection("users").doc(uid).set({
-        "uid": uid,
-        "nama": nameC.text,
-        "nim": nimC.text,
-        "email": emailC.text,
-        "nomorHp": phoneC.text,
-        "role": "penumpang",
-        "createdAt": FieldValue.serverTimestamp(),
-        "balance": 0,
-        "totalRating": 0,
-        "ratingCount": 0,
-      });
-
-      Get.snackbar("Sukses", "Registrasi Berhasil!");
-      Get.offAllNamed(Routes.passengerMain);
-      */
+      if (success) {
+        Get.snackbar(
+          "Success",
+          "Registrasi berhasil! Selamat datang ${nameC.text}",
+          backgroundColor: Colors.green,
+          colorText: Colors.white,
+        );
+        Get.offAllNamed(Routes.passengerMain);
+      }
     } catch (e) {
       Get.snackbar("Gagal", e.toString());
     } finally {

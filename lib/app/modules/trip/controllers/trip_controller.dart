@@ -1,15 +1,12 @@
-// filepath: lib/app/modules/trip/controllers/trip_controller.dart
-
 import 'dart:async';
 import 'package:get/get.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:firebase_auth/firebase_auth.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
-import 'package:google_polyline_algorithm/google_polyline_algorithm.dart';
 import '../../../../data/models/ride_request.dart';
 import '../../../../data/models/user_model.dart';
 import '../../../routes/app_pages.dart';
+import 'package:google_polyline_algorithm/google_polyline_algorithm.dart';
 
 sealed class TripNavEvent {
   static const navigateToHome = 'navigateToHome';
@@ -47,15 +44,14 @@ class TripUiState {
 }
 
 class TripController extends GetxController {
-  final FirebaseFirestore _db = FirebaseFirestore.instance;
-  final FirebaseAuth _auth = FirebaseAuth.instance;
+  final SupabaseClient _supabase = Supabase.instance.client;
 
   var uiState = TripUiState().obs;
-  StreamSubscription<DocumentSnapshot>? _rideRequestListener;
+  StreamSubscription? _rideSubscription;
   StreamSubscription<Position>? _locationSubscription;
 
   final String rideRequestId;
-  String? get currentUserId => _auth.currentUser?.uid;
+  String? get currentUserId => _supabase.auth.currentUser?.id;
 
   TripController({required this.rideRequestId});
 
@@ -69,62 +65,53 @@ class TripController extends GetxController {
 
   @override
   void onClose() {
-    _rideRequestListener?.cancel();
+    _rideSubscription?.cancel();
     _locationSubscription?.cancel();
     super.onClose();
   }
 
   void listenToTripUpdates() {
-    _rideRequestListener = _db
-        .collection("ride_requests")
-        .doc(rideRequestId)
-        .snapshots()
-        .listen(
-          (snapshot) async {
-            if (snapshot.exists) {
-              try {
-                final data = snapshot.data() as Map<String, dynamic>;
-                final ride = RideRequest.fromMap(data, snapshot.id);
+    // Menggunakan Stream Supabase
+    _rideSubscription = _supabase
+        .from("ride_requests")
+        .stream(primaryKey: ['id'])
+        .eq('id', rideRequestId)
+        .listen((List<Map<String, dynamic>> data) async {
+          if (data.isNotEmpty) {
+            try {
+              final rideData = data.first;
+              final ride = RideRequest.fromJson(rideData); // Gunakan fromJson
 
-                // Determine if current user is driver
-                final isDriver = ride.driverId == currentUserId;
-                uiState.value = uiState.value.copyWith(
-                  rideRequest: ride,
-                  isDriver: isDriver,
-                );
+              final isDriver = ride.driverId == currentUserId;
+              uiState.value = uiState.value.copyWith(
+                rideRequest: ride,
+                isDriver: isDriver,
+              );
 
-                // Load other user info (passenger for driver, driver for passenger)
-                await loadOtherUserInfo(isDriver, ride);
-
-                // Update route based on trip status
-                await updateRouteBasedOnStatus();
-              } catch (e) {
-                print('Error processing trip update: $e');
-              }
+              await loadOtherUserInfo(isDriver, ride);
+              // await updateRouteBasedOnStatus(); // (Implementasi logika peta)
+            } catch (e) {
+              print('Error processing trip update: $e');
             }
-          },
-          onError: (error) {
-            print('Error listening to trip updates: $error');
-          },
-        );
+          }
+        });
   }
 
   Future<void> loadOtherUserInfo(bool isDriver, RideRequest rideRequest) async {
-    try {
-      final otherUserId = isDriver
-          ? rideRequest.passengerId
-          : rideRequest.driverId;
+    final otherUserId = isDriver
+        ? rideRequest.passengerId
+        : rideRequest.driverId;
+    if (otherUserId != null) {
+      final userData = await _supabase
+          .from("users")
+          .select()
+          .eq("id", otherUserId)
+          .maybeSingle();
 
-      if (otherUserId != null && otherUserId.isNotEmpty) {
-        final userDoc = await _db.collection("users").doc(otherUserId).get();
-        if (userDoc.exists) {
-          final userData = userDoc.data() as Map<String, dynamic>;
-          final otherUser = UserModel.fromMap(userData, id: otherUserId);
-          uiState.value = uiState.value.copyWith(otherUser: otherUser);
-        }
+      if (userData != null) {
+        final otherUser = UserModel.fromMap(userData, id: otherUserId);
+        uiState.value = uiState.value.copyWith(otherUser: otherUser);
       }
-    } catch (e) {
-      print('Error loading other user info: $e');
     }
   }
 
@@ -227,36 +214,29 @@ class TripController extends GetxController {
   void updateDriverLocation(Position position) {
     if (rideRequestId.isEmpty) return;
 
-    _db
-        .collection("ride_requests")
-        .doc(rideRequestId)
+    _supabase
+        .from("ride_requests")
         .update({
-          'driverCurrentLocation': {
+          'driver_current_location': {
+            // Pastikan kolom di DB snake_case atau jsonb
             'latitude': position.latitude,
             'longitude': position.longitude,
           },
         })
-        .catchError((error) {
-          print('Error updating driver location: $error');
-        });
+        .eq('id', rideRequestId)
+        .then((_) {})
+        .catchError((error) => print('Error updating loc: $error'));
   }
 
   void updateTripStatus(String newStatus) {
     if (rideRequestId.isEmpty) return;
 
     final updateData = <String, dynamic>{'status': newStatus};
-
     if (newStatus == 'completed') {
-      updateData['completedAt'] = FieldValue.serverTimestamp();
+      updateData['completed_at'] = DateTime.now().toIso8601String();
     }
 
-    _db
-        .collection("ride_requests")
-        .doc(rideRequestId)
-        .update(updateData)
-        .catchError((error) {
-          print('Error updating trip status: $error');
-        });
+    _supabase.from("ride_requests").update(updateData).eq('id', rideRequestId);
   }
 
   void cancelTrip() {

@@ -1,7 +1,5 @@
-// filepath: lib/app/modules/rating/controllers/rating_controller.dart
-
 import 'package:get/get.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../../../data/models/ride_request.dart';
 import '../../../../data/models/user_model.dart';
 
@@ -46,8 +44,7 @@ class RatingUiState {
 }
 
 class RatingController extends GetxController {
-  final FirebaseFirestore _firestore = FirebaseFirestore.instance;
-
+  final SupabaseClient _supabase = Supabase.instance.client;
   final String driverId;
   final String rideRequestId;
 
@@ -63,30 +60,27 @@ class RatingController extends GetxController {
 
   Future<void> fetchTripAndDriverDetails() async {
     uiState.value = uiState.value.copyWith(isLoading: true);
-
     try {
-      // Fetch driver details
-      final driverDoc = await _firestore
-          .collection('users')
-          .doc(driverId)
-          .get();
-
+      // Fetch Driver
+      final driverData = await _supabase
+          .from('users')
+          .select()
+          .eq('id', driverId)
+          .maybeSingle();
       UserModel? driver;
-      if (driverDoc.exists) {
-        final driverData = driverDoc.data() as Map<String, dynamic>;
+      if (driverData != null) {
         driver = UserModel.fromMap(driverData, id: driverId);
       }
 
-      // Fetch ride request details
-      final rideDoc = await _firestore
-          .collection('ride_requests')
-          .doc(rideRequestId)
-          .get();
-
+      // Fetch Ride
+      final rideData = await _supabase
+          .from('ride_requests')
+          .select()
+          .eq('id', rideRequestId)
+          .maybeSingle();
       RideRequest? rideRequest;
-      if (rideDoc.exists) {
-        final rideData = rideDoc.data() as Map<String, dynamic>;
-        rideRequest = RideRequest.fromMap(rideData, rideRequestId);
+      if (rideData != null) {
+        rideRequest = RideRequest.fromJson(rideData);
       }
 
       uiState.value = uiState.value.copyWith(
@@ -95,7 +89,6 @@ class RatingController extends GetxController {
         isLoading: false,
       );
     } catch (e) {
-      print('Error fetching trip and driver details: $e');
       uiState.value = uiState.value.copyWith(
         isLoading: false,
         error: e.toString(),
@@ -118,30 +111,37 @@ class RatingController extends GetxController {
     uiState.value = uiState.value.copyWith(isSubmitting: true);
 
     try {
-      final driverRef = _firestore.collection('users').doc(driverId);
-      final rideRef = _firestore.collection('ride_requests').doc(rideRequestId);
+      // Update Ride Request (beri rating)
+      await _supabase
+          .from('ride_requests')
+          .update({
+            'rating': rating,
+            'passenger_comment':
+                uiState.value.comment, // sesuaikan nama kolom DB
+          })
+          .eq('id', rideRequestId);
 
-      await _firestore.runTransaction((transaction) async {
-        final snapshot = await transaction.get(driverRef);
+      // PENTING: Untuk update rating user, sebaiknya gunakan Database Function (RPC)
+      // untuk menghindari race condition. Namun untuk migrasi cepat di sisi klien:
 
-        if (snapshot.exists) {
-          final data = snapshot.data() as Map<String, dynamic>;
-          final currentTotalRating = (data['totalRating'] ?? 0) as int;
-          final currentRatingCount = (data['ratingCount'] ?? 0) as int;
+      // 1. Ambil data user terkini
+      final userRes = await _supabase
+          .from('users')
+          .select('total_rating, rating_count')
+          .eq('id', driverId)
+          .single();
+      final currentTotal = (userRes['total_rating'] ?? 0).toDouble();
+      final currentCount = (userRes['rating_count'] ?? 0).toInt();
 
-          transaction.update(driverRef, {
-            'totalRating': currentTotalRating + rating,
-            'ratingCount': currentRatingCount + 1,
-          });
-        }
+      // 2. Update data user
+      await _supabase
+          .from('users')
+          .update({
+            'total_rating': currentTotal + rating,
+            'rating_count': currentCount + 1,
+          })
+          .eq('id', driverId);
 
-        transaction.update(rideRef, {
-          'rating': rating,
-          'passengerComment': uiState.value.comment,
-        });
-      });
-
-      print('Rating submitted successfully');
       uiState.value = uiState.value.copyWith(isSubmitting: false);
     } catch (e) {
       print('Error submitting rating: $e');

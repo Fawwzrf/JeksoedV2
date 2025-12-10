@@ -1,6 +1,5 @@
 import 'package:get/get.dart';
-import 'package:firebase_auth/firebase_auth.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 
 class HomePassengerController extends GetxController {
   var userName = "Sobat Jeksoed".obs;
@@ -8,8 +7,7 @@ class HomePassengerController extends GetxController {
   var hasNotification = true.obs;
   var recentTrips = <Map<String, String>>[].obs;
 
-  final FirebaseAuth _auth = FirebaseAuth.instance;
-  final FirebaseFirestore _firestore = FirebaseFirestore.instance;
+  final SupabaseClient _supabase = Supabase.instance.client;
 
   @override
   void onInit() {
@@ -22,46 +20,65 @@ class HomePassengerController extends GetxController {
   }
 
   Future<void> fetchUserData() async {
-    String? uid = _auth.currentUser?.uid;
+    final user = _supabase.auth.currentUser;
+    if (user == null) return;
+
     try {
-      var doc = await _firestore.collection("users").doc(uid).get();
-      if (doc.exists) {
-        String fullName = doc.get("nama") ?? "Sobat Jeksoed";
+      // Fetch User Data
+      final data = await _supabase
+          .from("users")
+          .select("nama")
+          .eq("id", user.id)
+          .maybeSingle();
+
+      if (data != null) {
+        String fullName = data['nama'] ?? "Sobat Jeksoed";
         userName.value = fullName.split(" ").first;
       }
-      // Fetch history trips
-      await fetchRecentTrips();
+
+      // Fetch History Trips
+      await fetchRecentTrips(user.id);
     } catch (e) {
-      print(e);
+      print("Error fetching user data: $e");
     } finally {
       isLoading.value = false;
     }
-    }
+  }
 
-  Future<void> fetchRecentTrips() async {
+  Future<void> fetchRecentTrips(String uid) async {
     try {
-      String? uid = _auth.currentUser?.uid;
-      var query = await _firestore
-          .collection("ride_requests")
-          .where("passengerId", isEqualTo: uid)
-          .where("status", isEqualTo: "completed")
-          .orderBy("createdAt", descending: true)
-          .limit(5)
-          .get();
+      final response = await _supabase
+          .from("ride_requests")
+          .select()
+          .eq(
+            "passenger_id",
+            uid,
+          ) // pastikan nama kolom di DB 'passenger_id' atau 'passengerId'
+          .eq("status", "completed")
+          .order("created_at", ascending: false)
+          .limit(5);
 
-      recentTrips.value = query.docs.map((doc) {
-        var data = doc.data();
+      // Supabase mengembalikan List<dynamic>, kita casting
+      final List<dynamic> dataList = response;
+
+      recentTrips.value = dataList.map((data) {
         return {
-          'destination': (data['destinationName'] ?? 'Tujuan tidak diketahui')
-              .toString(),
-          'address': (data['destinationAddress'] ?? 'Alamat tidak tersedia')
-              .toString(),
-          'date': data['createdAt'] != null
-              ? _formatDate(data['createdAt'].toDate())
+          'destination':
+              (data['dest_address'] ??
+                      data['destinationAddress'] ??
+                      'Tujuan tidak diketahui')
+                  .toString(),
+          'address':
+              (data['dest_address'] ??
+                      data['destinationAddress'] ??
+                      'Alamat tidak tersedia')
+                  .toString(),
+          'date': data['created_at'] != null
+              ? _formatDate(DateTime.parse(data['created_at'].toString()))
               : '',
         };
       }).toList();
-        } catch (e) {
+    } catch (e) {
       print("Error fetching recent trips: $e");
     }
   }

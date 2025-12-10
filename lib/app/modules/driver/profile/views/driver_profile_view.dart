@@ -2,7 +2,7 @@
 
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
-import 'package:firebase_auth/firebase_auth.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../../../../utils/app_colors.dart';
 
 class DriverProfileView extends StatelessWidget {
@@ -10,7 +10,12 @@ class DriverProfileView extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final user = FirebaseAuth.instance.currentUser;
+    final user = Supabase.instance.client.auth.currentUser;
+
+    final String? userName =
+        user?.userMetadata?['name'] ?? user?.userMetadata?['full_name'];
+    final String? userPhoto =
+        user?.userMetadata?['photo_url'] ?? user?.userMetadata?['avatar_url'];
 
     return Scaffold(
       backgroundColor: Colors.grey.shade100,
@@ -48,9 +53,9 @@ class DriverProfileView extends StatelessWidget {
                           border: Border.all(color: Colors.white, width: 3),
                         ),
                         child: ClipOval(
-                          child: user?.photoURL != null
+                          child: userPhoto != null
                               ? Image.network(
-                                  user!.photoURL!,
+                                  userPhoto,
                                   fit: BoxFit.cover,
                                   errorBuilder: (context, error, stackTrace) {
                                     return _buildDefaultAvatar();
@@ -62,7 +67,7 @@ class DriverProfileView extends StatelessWidget {
                       const SizedBox(height: 12),
                       // Name
                       Text(
-                        user?.displayName ?? 'Driver',
+                        userName ?? 'Driver',
                         style: const TextStyle(
                           color: Colors.white,
                           fontSize: 24,
@@ -357,7 +362,7 @@ class DriverProfileView extends StatelessWidget {
 
   void _logout() async {
     try {
-      await FirebaseAuth.instance.signOut();
+      await Supabase.instance.client.auth.signOut();
       Get.offAllNamed('/cta');
     } catch (e) {
       Get.snackbar('Error', 'Gagal keluar: $e');

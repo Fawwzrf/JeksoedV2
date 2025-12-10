@@ -1,8 +1,7 @@
 // filepath: lib/app/modules/shared/profile/controllers/profile_controller.dart
 
 import 'package:get/get.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:firebase_auth/firebase_auth.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 
 class ProfileUiState {
   final String name;
@@ -45,9 +44,7 @@ class ProfileUiState {
 }
 
 class ProfileController extends GetxController {
-  final FirebaseAuth _auth = FirebaseAuth.instance;
-  final FirebaseFirestore _firestore = FirebaseFirestore.instance;
-
+  final SupabaseClient _supabase = Supabase.instance.client;
   var uiState = ProfileUiState().obs;
 
   @override
@@ -58,38 +55,31 @@ class ProfileController extends GetxController {
 
   Future<void> fetchUserData() async {
     try {
-      final user = _auth.currentUser;
+      final user = _supabase.auth.currentUser;
       if (user != null) {
-        final document = await _firestore
-            .collection("users")
-            .doc(user.uid)
-            .get();
+        final data = await _supabase
+            .from("users")
+            .select()
+            .eq("id", user.id)
+            .maybeSingle();
 
-        if (document.exists) {
-          final data = document.data() as Map<String, dynamic>;
-
+        if (data != null) {
           uiState.value = uiState.value.copyWith(
-            name: data['nama'] ?? 'Nama tidak ditemukan',
+            name: data['nama'] ?? data['name'] ?? 'Nama tidak ditemukan',
             email: user.email ?? 'Email tidak ditemukan',
-            photoUrl: data['photoUrl'] ?? '',
-            role: data['role'] ?? 'passenger',
+            photoUrl: data['photoUrl'] ?? data['photo_url'] ?? '',
+            role: data['role'] ?? data['user_type'] ?? 'passenger',
             isLoading: false,
           );
         } else {
-          uiState.value = uiState.value.copyWith(
-            name: 'Data tidak ditemukan',
-            email: user.email ?? 'Email tidak ditemukan',
-            photoUrl: '',
-            isLoading: false,
-          );
+          // Handle empty data
+          uiState.value = uiState.value.copyWith(isLoading: false);
         }
       }
     } catch (e) {
       print('Error fetching user data: $e');
       uiState.value = uiState.value.copyWith(
-        name: 'Gagal memuat data',
-        email: 'Gagal memuat data',
-        photoUrl: '',
+        name: 'Gagal memuat',
         isLoading: false,
       );
     }
@@ -113,11 +103,10 @@ class ProfileController extends GetxController {
 
   Future<void> confirmLogout() async {
     try {
-      await _auth.signOut();
+      await _supabase.auth.signOut();
       onDismissLogoutDialog();
       Get.offAllNamed('/cta');
     } catch (e) {
-      print('Error during logout: $e');
       Get.snackbar('Error', 'Gagal logout: $e');
       onDismissLogoutDialog();
     }
@@ -125,15 +114,10 @@ class ProfileController extends GetxController {
 
   Future<void> confirmDeleteAccount() async {
     try {
-      final user = _auth.currentUser;
-      final uid = user?.uid;
-
-      if (uid != null) {
-        // 1. Delete data from Firestore
-        await _firestore.collection("users").doc(uid).delete();
-
-        // 2. Delete user from Auth
-        await user!.delete();
+      final user = _supabase.auth.currentUser;
+      if (user != null) {
+        await _supabase.from("users").delete().eq("id", user.id);
+        await _supabase.auth.signOut();
 
         onDismissDeleteDialog();
         Get.offAllNamed('/cta');

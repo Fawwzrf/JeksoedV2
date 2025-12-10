@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import '../../../../routes/app_pages.dart';
+import '../../../../data/services/auth_service.dart';
 
 class RegisterDriverController extends GetxController {
   // Step 1: Identitas
@@ -14,7 +15,7 @@ class RegisterDriverController extends GetxController {
   // Step 2: Dokumen
   final driverLicenseController = TextEditingController();
   final vehiclePlateController = TextEditingController();
-  
+
   // Step 3: Verifikasi
   final agreementAccepted = false.obs;
 
@@ -76,13 +77,33 @@ class RegisterDriverController extends GetxController {
 
     try {
       isLoading.value = true;
-      
-      // Simulasi proses registrasi
-      await Future.delayed(Duration(milliseconds: 2000));
-      
-      Get.snackbar("Success", "Registrasi driver berhasil! Menunggu verifikasi admin.");
-      Get.offAllNamed(Routes.driverMain);
-      
+
+      final userData = {
+        'name': nameController.text,
+        'nim': nimController.text, // Masukkan NIM disini
+        'email': emailController.text,
+        'phone': phoneController.text,
+        'password': passwordController.text,
+      };
+
+      // Persiapkan Data Driver
+      final driverData = {
+        'licenseNumber': driverLicenseController.text,
+        'vehiclePlate': vehiclePlateController.text,
+        'vehicleType': 'motor', // Default atau ambil dari inputan lain
+        // Path dokumen (sementara null atau sesuaikan jika ada image picker)
+        'ktp_path': null,
+        'sim_path': null,
+        'vehicle_path': null,
+      };
+
+      // Panggil AuthService
+      final success = await AuthService.to.registerDriver(userData, driverData);
+
+      if (success) {
+        // Redirect ke login atau halaman menunggu verifikasi
+        Get.offAllNamed(Routes.login);
+      }
     } catch (e) {
       Get.snackbar("Error", "Registrasi gagal: ${e.toString()}");
     } finally {

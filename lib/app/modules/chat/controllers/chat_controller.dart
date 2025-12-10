@@ -161,7 +161,7 @@ class ChatController extends GetxController {
 
       // Ambil data Ride untuk mengetahui siapa driver dan siapa passenger
       final rideData = await _supabase
-          .from('rides')
+          .from('ride_requests')
           .select('passenger_id, driver_id')
           .eq('id', rideId)
           .maybeSingle();

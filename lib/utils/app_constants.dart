@@ -16,7 +16,7 @@ class AppConstants {
 
   // Table Names
   static const String usersTable = 'users';
-  static const String ridesTable = 'rides';
+  static const String ridesTable = 'ride_requests';
   static const String driversTable = 'drivers';
   static const String paymentsTable = 'payments';
   static const String ratingsTable = 'ratings';

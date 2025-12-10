@@ -2,8 +2,7 @@
 
 import 'dart:async';
 import 'package:get/get.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:firebase_auth/firebase_auth.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:google_polyline_algorithm/google_polyline_algorithm.dart';
 import '../../../../../data/models/ride_request.dart';
@@ -46,11 +45,10 @@ class ActivityDetailUiState {
 }
 
 class ActivityDetailController extends GetxController {
-  final FirebaseFirestore _db = FirebaseFirestore.instance;
-  final FirebaseAuth _auth = FirebaseAuth.instance;
+  final SupabaseClient _supabase = Supabase.instance.client;
 
   var uiState = ActivityDetailUiState().obs;
-  StreamSubscription<DocumentSnapshot>? _rideListener;
+  StreamSubscription? _rideSubscription;
 
   late String rideRequestId;
 
@@ -65,44 +63,47 @@ class ActivityDetailController extends GetxController {
 
   @override
   void onClose() {
-    _rideListener?.cancel();
+    _rideSubscription?.cancel();
     super.onClose();
   }
 
   Future<void> fetchRideDetails() async {
-    _rideListener?.cancel();
+    _rideSubscription?.cancel();
 
-    _rideListener = _db
-        .collection("ride_requests")
-        .doc(rideRequestId)
-        .snapshots()
+    // Menggunakan Stream Supabase
+    _rideSubscription = _supabase
+        .from("ride_requests")
+        .stream(primaryKey: ['id'])
+        .eq('id', rideRequestId)
         .listen(
-          (rideDoc) async {
-            if (!rideDoc.exists) {
+          (List<Map<String, dynamic>> data) async {
+            if (data.isEmpty) {
               uiState.value = uiState.value.copyWith(isLoading: false);
               return;
             }
 
             try {
-              final data = rideDoc.data() as Map<String, dynamic>;
-              final ride = RideRequest.fromMap(data, rideDoc.id);
+              final rideData = data.first;
+              final ride = RideRequest.fromJson(rideData);
 
-              final currentUserId = _auth.currentUser?.uid;
+              final currentUserId = _supabase.auth.currentUser?.id;
               final isDriver = ride.driverId == currentUserId;
               final otherUserId = isDriver ? ride.passengerId : ride.driverId;
+
               UserModel? otherUser;
               if (otherUserId != null && otherUserId.isNotEmpty) {
-                final otherUserDoc = await _db
-                    .collection("users")
-                    .doc(otherUserId)
-                    .get();
-                if (otherUserDoc.exists) {
-                  final userData = otherUserDoc.data() as Map<String, dynamic>;
-                  otherUser = UserModel.fromMap(userData);
+                final userResponse = await _supabase
+                    .from("users")
+                    .select()
+                    .eq("id", otherUserId)
+                    .maybeSingle();
+
+                if (userResponse != null) {
+                  otherUser = UserModel.fromMap(userResponse, id: otherUserId);
                 }
               }
 
-              // Calculate chat enabled (30 minutes after completion)
+              // Hitung apakah chat aktif (30 menit setelah selesai)
               final completedAt = ride.completedAt?.millisecondsSinceEpoch ?? 0;
               final thirtyMinutesInMillis = 30 * 60 * 1000;
               final isChatEnabled =
@@ -110,7 +111,7 @@ class ActivityDetailController extends GetxController {
                   (DateTime.now().millisecondsSinceEpoch - completedAt) <
                       thirtyMinutesInMillis;
 
-              // Decode polyline points
+              // Decode polyline
               List<LatLng> polylinePoints = [];
               if (ride.encodedPolyline != null &&
                   ride.encodedPolyline!.isNotEmpty) {
@@ -155,13 +156,6 @@ class ActivityDetailController extends GetxController {
 
   void onChatClick() {
     if (!uiState.value.isChatEnabled) return;
-
-    // Navigate to chat screen
-    // Get.toNamed('/chat/${rideRequestId}');
-    Get.snackbar(
-      'Chat',
-      'Fitur chat akan tersedia di versi selanjutnya',
-      snackPosition: SnackPosition.BOTTOM,
-    );
+    Get.toNamed('/chat/$rideRequestId');
   }
 }

@@ -203,7 +203,7 @@ class DriverHomeController extends GetxController {
           .from('ride_requests')
           .select()
           .eq('driver_id', userId)
-          .in_('status', ['accepted', 'arrived', 'started'])
+          .inFilter('status', ['accepted', 'arrived', 'started'])
           .limit(1);
 
       final data = _unwrapResponse(res);
@@ -237,15 +237,13 @@ class DriverHomeController extends GetxController {
 
               // convert and sort by created_at (newest first)
               raw.sort((a, b) {
-                final da = (a['created_at'] ?? a['createdAt']);
-                final db = (b['created_at'] ?? b['createdAt']);
-                DateTime pa =
-                    RideRequest._internalParseDate(da) ??
-                    DateTime.fromMillisecondsSinceEpoch(0);
-                DateTime pb =
-                    RideRequest._internalParseDate(db) ??
-                    DateTime.fromMillisecondsSinceEpoch(0);
-                return pb.compareTo(pa);
+                DateTime parse(dynamic v) {
+                  if (v == null) return DateTime(1970);
+                  if (v is DateTime) return v;
+                  return DateTime.tryParse(v.toString()) ?? DateTime(1970);
+                }
+
+                return parse(b['created_at']).compareTo(parse(a['created_at']));
               });
 
               final newRequests = raw

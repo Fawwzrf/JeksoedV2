@@ -85,6 +85,7 @@ class AuthService extends GetxService {
   // Register new user
   Future<bool> registerPassenger({
     required String name,
+    required String nim,
     required String email,
     required String phone,
     required String password,
@@ -96,7 +97,7 @@ class AuthService extends GetxService {
       final response = await _supabase.auth.signUp(
         email: email,
         password: password,
-        data: {'name': name},
+        data: {'name': name, 'nim': nim},
       );
 
       if (response.user == null) return false;
@@ -105,6 +106,7 @@ class AuthService extends GetxService {
       final userData = {
         'id': response.user!.id,
         'name': name,
+        'nim': nim,
         'email': email,
         'phone': phone,
         'user_type': 'passenger',
@@ -137,7 +139,11 @@ class AuthService extends GetxService {
       final authResponse = await _supabase.auth.signUp(
         email: userData['email'],
         password: userData['password'],
-        data: {'name': userData['name'], 'phone': userData['phone']},
+        data: {
+          'name': userData['name'],
+          'phone': userData['phone'],
+          'nim': userData['nim'],
+        },
       );
 
       if (authResponse.user == null) throw "Gagal membuat akun.";
@@ -154,6 +160,7 @@ class AuthService extends GetxService {
       final driverProfile = {
         'id': userId,
         'name': userData['name'],
+        'nim': userData['nim'],
         'email': userData['email'],
         'phone': userData['phone'],
         'user_type': 'driver',

@@ -2,8 +2,7 @@
 
 import 'dart:async';
 import 'package:get/get.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:firebase_auth/firebase_auth.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../../../../data/models/ride_request.dart';
 
 class RideHistoryDisplay {
@@ -51,13 +50,11 @@ class ActivityUiState {
 }
 
 class ActivityController extends GetxController {
-  final FirebaseFirestore _db = FirebaseFirestore.instance;
-  final FirebaseAuth _auth = FirebaseAuth.instance;
-
+  final SupabaseClient _supabase = Supabase.instance.client;
   var uiState = ActivityUiState().obs;
-  StreamSubscription<QuerySnapshot>? _historySubscription;
+  StreamSubscription? _historySubscription;
 
-  String? get currentUserId => _auth.currentUser?.uid;
+  String? get currentUserId => _supabase.auth.currentUser?.id;
 
   @override
   void onInit() {
@@ -78,8 +75,12 @@ class ActivityController extends GetxController {
     }
 
     try {
-      final userDoc = await _db.collection("users").doc(currentUserId).get();
-      final role = userDoc.data()?['role'] as String?;
+      final userDoc = await _supabase
+          .from("users")
+          .select('role')
+          .eq('id', currentUserId!)
+          .single();
+      final role = userDoc['role'] as String?;
       await fetchHistory(role);
     } catch (e) {
       print('Error fetching user role: $e');
@@ -93,69 +94,75 @@ class ActivityController extends GetxController {
     final isDriver = role == "driver";
     uiState.value = uiState.value.copyWith(isDriver: isDriver);
 
-    final fieldToQuery = isDriver ? "driverId" : "passengerId";
+    final fieldToQuery = isDriver
+        ? "driver_id"
+        : "passenger_id"; // Sesuaikan nama kolom di DB Supabase (snake_case)
 
     _historySubscription?.cancel();
-    _historySubscription = _db
-        .collection("ride_requests")
-        .where(fieldToQuery, isEqualTo: currentUserId)
-        .where("status", whereIn: ["completed", "cancelled"])
-        .orderBy("createdAt", descending: true)
-        .snapshots()
+
+    // Supabase Realtime Stream
+    _historySubscription = _supabase
+        .from("ride_requests")
+        .stream(primaryKey: ['id'])
+        .eq(fieldToQuery, currentUserId!)
+        .order("created_at", ascending: false) // Pastikan created_at ada di DB
         .listen(
-          (snapshot) async {
+          (List<Map<String, dynamic>> data) async {
             try {
+              // Filter status completed/cancelled di sisi client karena stream terbatas filter-nya
+              final filteredData = data
+                  .where(
+                    (element) =>
+                        element['status'] == 'completed' ||
+                        element['status'] == 'cancelled',
+                  )
+                  .toList();
+
               final historyItems = <RideHistoryDisplay>[];
 
-              for (final doc in snapshot.docs) {
-                try {
-                  final data = doc.data();
-                  final ride = RideRequest.fromMap(data, doc.id);
-                  final otherUserId = isDriver
-                      ? ride.passengerId
-                      : ride.driverId;
-                  if (otherUserId == null || otherUserId.isEmpty) {
-                    print(
-                      'Ride with ID ${ride.id} is missing other user\'s ID.',
-                    );
-                    continue;
+              for (final rideData in filteredData) {
+                final ride = RideRequest.fromJson(rideData); // Gunakan fromJson
+
+                final otherUserId = isDriver ? ride.passengerId : ride.driverId;
+
+                String otherUserName = 'User';
+                String? otherUserPhoto;
+
+                if (otherUserId != null) {
+                  final userData = await _supabase
+                      .from("users")
+                      .select("nama, photo_url")
+                      .eq("id", otherUserId)
+                      .maybeSingle();
+
+                  if (userData != null) {
+                    otherUserName =
+                        userData['nama'] ?? userData['name'] ?? 'User';
+                    otherUserPhoto =
+                        userData['photo_url'] ?? userData['photoUrl'];
                   }
-
-                  final userDoc = await _db
-                      .collection("users")
-                      .doc(otherUserId)
-                      .get();
-                  final userData = userDoc.data();
-                  final otherUserName = userData?['nama'] ?? 'User';
-                  final otherUserPhoto = userData?['photoUrl'];
-
-                  historyItems.add(
-                    RideHistoryDisplay(
-                      ride: ride,
-                      otherUserName: otherUserName,
-                      otherUserPhoto: otherUserPhoto,
-                    ),
-                  );
-                } catch (e) {
-                  print('Error processing ride document: $e');
                 }
+
+                historyItems.add(
+                  RideHistoryDisplay(
+                    ride: ride,
+                    otherUserName: otherUserName,
+                    otherUserPhoto: otherUserPhoto,
+                  ),
+                );
               }
 
               uiState.value = uiState.value.copyWith(
                 isLoading: false,
                 rideHistoryItems: historyItems,
               );
-
-              // Update filtered list
               onTabSelected(uiState.value.selectedTab);
             } catch (e) {
               print('Error processing ride history: $e');
-              uiState.value = uiState.value.copyWith(isLoading: false);
             }
           },
           onError: (e) {
-            print('Error listening to ride history: $e');
-            uiState.value = uiState.value.copyWith(isLoading: false);
+            print('Stream error: $e');
           },
         );
   }
