@@ -3,6 +3,7 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:cached_network_image/cached_network_image.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 import '../controllers/chat_controller.dart';
 import '../../../../data/models/message.dart';
 
@@ -13,6 +14,7 @@ class ChatView extends GetView<ChatController> {
   Widget build(BuildContext context) {
     return Obx(() {
       final uiState = controller.uiState.value;
+      final currentUserId = Supabase.instance.client.auth.currentUser?.id ?? '';
 
       return Scaffold(
         appBar: ChatAppBar(
@@ -25,7 +27,7 @@ class ChatView extends GetView<ChatController> {
             Expanded(
               child: ChatMessagesList(
                 messages: uiState.messages,
-                currentUserId: controller.currentUserId ?? '',
+                currentUserId: currentUserId,
                 currentUserPhotoUrl: uiState.currentUserPhotoUrl,
                 otherUserPhotoUrl: uiState.otherUserPhotoUrl,
               ),
@@ -157,8 +159,8 @@ class MessageBubble extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final bubbleColor = isMyMessage
-        ? const Color(0xFF272343) // Dark color untuk pesan sendiri
-        : const Color(0xFFFFD803); // Yellow untuk pesan lawan
+        ? const Color(0xFF272343)
+        : const Color(0xFFFFD803);
 
     final textColor = isMyMessage ? Colors.white : Colors.black;
 
@@ -230,7 +232,7 @@ class MessageBubble extends StatelessWidget {
   }
 
   Widget _buildMessageContent(Color textColor) {
-    if (message.type == 'image' && message.imageUrl != null) {
+    if (message.type == 'image' && (message.imageUrl?.isNotEmpty ?? false)) {
       return Container(
         padding: const EdgeInsets.all(4),
         child: ClipRoundedRectangle(
@@ -261,7 +263,8 @@ class MessageBubble extends StatelessWidget {
       return Padding(
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
         child: Text(
-          message.text,
+          // use 'content' field (ensure Message model defines it)
+          message.content,
           style: TextStyle(color: textColor, fontSize: 14),
         ),
       );
@@ -303,6 +306,9 @@ class ChatMessageInput extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final controller = TextEditingController(text: messageText)
+      ..selection = TextSelection.collapsed(offset: messageText.length);
+
     return Container(
       decoration: const BoxDecoration(
         color: Colors.white,
@@ -320,6 +326,7 @@ class ChatMessageInput extends StatelessWidget {
           children: [
             Expanded(
               child: TextField(
+                controller: controller,
                 onChanged: onMessageChanged,
                 decoration: InputDecoration(
                   hintText: 'Ketik pesan kamu',
@@ -357,10 +364,6 @@ class ChatMessageInput extends StatelessWidget {
                     vertical: 12,
                   ),
                 ),
-                controller: TextEditingController(text: messageText)
-                  ..selection = TextSelection.collapsed(
-                    offset: messageText.length,
-                  ),
                 textInputAction: TextInputAction.send,
                 onSubmitted: (_) =>
                     messageText.trim().isNotEmpty ? onSendMessage() : null,

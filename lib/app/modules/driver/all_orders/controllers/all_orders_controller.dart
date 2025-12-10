@@ -2,13 +2,11 @@
 
 import 'dart:async';
 import 'package:get/get.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:firebase_auth/firebase_auth.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../../../../data/models/ride_request.dart';
 
 class AllOrdersController extends GetxController {
-  final FirebaseFirestore _firestore = FirebaseFirestore.instance;
-  final FirebaseAuth _auth = FirebaseAuth.instance;
+  final SupabaseClient _supabase = Supabase.instance.client;
 
   // Observables
   var rideRequests = <RideRequest>[].obs;
@@ -16,7 +14,7 @@ class AllOrdersController extends GetxController {
   var acceptingRideId = Rxn<String>();
 
   // Streams
-  StreamSubscription<QuerySnapshot>? _rideRequestsStream;
+  StreamSubscription? _rideRequestsStream;
 
   @override
   void onInit() {
@@ -30,27 +28,70 @@ class AllOrdersController extends GetxController {
     super.onClose();
   }
 
+  DateTime _toDate(dynamic v) {
+    if (v == null) return DateTime.fromMillisecondsSinceEpoch(0);
+    if (v is DateTime) return v;
+    if (v is int) return DateTime.fromMillisecondsSinceEpoch(v);
+    if (v is String) {
+      final s = v.trim();
+      if (s.isEmpty) return DateTime.fromMillisecondsSinceEpoch(0);
+      try {
+        return DateTime.parse(s);
+      } catch (_) {}
+      try {
+        return DateTime.fromMillisecondsSinceEpoch(int.parse(s));
+      } catch (_) {}
+    }
+    return DateTime.fromMillisecondsSinceEpoch(0);
+  }
+
   void _startListeningForRides() {
     isLoading.value = true;
-    _rideRequestsStream = _firestore
-        .collection('ride_requests')
-        .where('status', isEqualTo: 'pending')
-        .orderBy('createdAt', descending: true)
-        .snapshots()
-        .listen(
-          (snapshot) {
-            final requests = snapshot.docs.map((doc) {
-              final data = doc.data();
-              return RideRequest.fromMap(data, doc.id);
-            }).toList();
+    _rideRequestsStream?.cancel();
 
-            rideRequests.value = requests;
-            isLoading.value = false;
+    _rideRequestsStream = _supabase
+        .from('ride_requests')
+        .stream(primaryKey: ['id'])
+        // listen all changes for table then filter client-side for compatibility
+        .listen(
+          (List<Map<String, dynamic>> data) {
+            try {
+              final raw = data
+                  .map((e) => Map<String, dynamic>.from(e))
+                  .toList();
+
+              // Keep only pending requests without driver assigned
+              final filtered = raw.where((r) {
+                final status = (r['status'] ?? r['status'].toString())
+                    .toString();
+                final driverId = r['driver_id'] ?? r['driverId'];
+                return status == 'pending' && (driverId == null);
+              }).toList();
+
+              // sort by created_at (safely)
+              filtered.sort((a, b) {
+                final da = _toDate(a['created_at'] ?? a['createdAt']);
+                final db = _toDate(b['created_at'] ?? b['createdAt']);
+                return db.compareTo(da); // descending (newest first)
+              });
+
+              // Convert to RideRequest model (assumes RideRequest.fromJson exists)
+              final requests = filtered
+                  .map(
+                    (m) => RideRequest.fromJson(Map<String, dynamic>.from(m)),
+                  )
+                  .toList();
+
+              rideRequests.value = requests;
+              isLoading.value = false;
+            } catch (e) {
+              print('Error processing ride requests stream: $e');
+              isLoading.value = false;
+            }
           },
-          onError: (error) {
-            print('Error listening for rides: $error');
+          onError: (err) {
+            print('Error listening for ride requests: $err');
             isLoading.value = false;
-            Get.snackbar('Error', 'Failed to load ride requests');
           },
         );
   }
@@ -58,16 +99,18 @@ class AllOrdersController extends GetxController {
   Future<void> acceptRideRequest(RideRequest rideRequest) async {
     try {
       acceptingRideId.value = rideRequest.id;
-      final userId = _auth.currentUser?.uid;
-
-      if (userId == null) throw Exception('Driver not logged in');
+      final driverId = _supabase.auth.currentUser?.id;
+      if (driverId == null) throw Exception('Driver not logged in');
 
       // Update ride request with driver info
-      await _firestore.collection('ride_requests').doc(rideRequest.id).update({
-        'driverId': userId,
-        'status': 'accepted',
-        'acceptedAt': FieldValue.serverTimestamp(),
-      });
+      await _supabase
+          .from('ride_requests')
+          .update({
+            'driver_id': driverId,
+            'status': 'accepted',
+            'accepted_at': DateTime.now().toIso8601String(),
+          })
+          .eq('id', rideRequest.id);
 
       acceptingRideId.value = null;
 

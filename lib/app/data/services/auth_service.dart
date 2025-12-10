@@ -1,8 +1,10 @@
-import 'dart:async';
-import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:supabase_flutter/supabase_flutter.dart' as sb;
+import 'dart:io';
+import '../../../app/routes/app_pages.dart';
+import '../../../utils/app_colors.dart';
+import '../../../utils/app_constants.dart';
 import '../models/user.dart';
 
 class AuthService extends GetxService {
@@ -25,40 +27,32 @@ class AuthService extends GetxService {
   @override
   void onInit() {
     super.onInit();
-    _checkAuthStatus();
-
-    // Listen to Auth State Changes (Login/Logout/Token Refresh)
-    _supabase.auth.onAuthStateChange.listen((data) {
-      final session = data.session;
-      if (session != null) {
-        _isLoggedIn.value = true;
-        _loadUserProfile(session.user.id);
-      } else {
-        _isLoggedIn.value = false;
-        _currentUser.value = null;
-      }
-    });
+    _recoverSession();
   }
 
-  // Check if user is already logged in
-  void _checkAuthStatus() {
+  // Cek sesi yang tersimpan
+  Future<void> _recoverSession() async {
     final session = _supabase.auth.currentSession;
-    _isLoggedIn.value = session != null;
     if (session != null) {
-      _loadUserProfile(session.user.id);
+      await _loadUserProfile(session.user.id);
     }
   }
 
+  // Load user profile dari tabel 'users' di database
   Future<void> _loadUserProfile(String userId) async {
     try {
-      final response = await _supabase
-          .from('users')
+      final data = await _supabase
+          .from(AppConstants.usersTable)
           .select()
           .eq('id', userId)
           .single();
-      _currentUser.value = User.fromJson(response);
+
+      _currentUser.value = User.fromJson(data);
+      _isLoggedIn.value = true;
     } catch (e) {
       print("Error loading profile: $e");
+      // Jika user ada di Auth tapi tidak ada di tabel users, logout
+      await logout();
     }
   }
 
@@ -66,13 +60,22 @@ class AuthService extends GetxService {
   Future<bool> login(String email, String password) async {
     try {
       _isLoading.value = true;
-      await _supabase.auth.signInWithPassword(email: email, password: password);
-      return true;
+
+      final response = await _supabase.auth.signInWithPassword(
+        email: email,
+        password: password,
+      );
+
+      if (response.user != null) {
+        await _loadUserProfile(response.user!.id);
+        return true;
+      }
+      return false;
     } on sb.AuthException catch (e) {
-      Get.snackbar('Login Failed', e.message);
+      Get.snackbar('Login Gagal', e.message);
       return false;
     } catch (e) {
-      Get.snackbar('Error', 'Unexpected error: $e');
+      Get.snackbar('Error', 'Terjadi kesalahan tidak terduga');
       return false;
     } finally {
       _isLoading.value = false;
@@ -93,13 +96,12 @@ class AuthService extends GetxService {
       final response = await _supabase.auth.signUp(
         email: email,
         password: password,
-        data: {'name': name}, // Metadata
+        data: {'name': name},
       );
 
       if (response.user == null) return false;
 
       // 2. Insert to 'users' table
-      // Pastikan Anda sudah membuat tabel 'users' di Supabase
       final userData = {
         'id': response.user!.id,
         'name': name,
@@ -227,7 +229,7 @@ class AuthService extends GetxService {
   Future<bool> updateProfile({
     required String name,
     required String phone,
-    String? profileImageUrl, // Ini asumsinya path file lokal jika baru diupload
+    String? profileImageUrl,
   }) async {
     try {
       _isLoading.value = true;

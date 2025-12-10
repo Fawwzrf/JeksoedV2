@@ -1,4 +1,6 @@
+import 'dart:async';
 import 'dart:io';
+import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:image_picker/image_picker.dart';
@@ -44,8 +46,8 @@ class ChatController extends GetxController {
   final SupabaseClient _supabase = Supabase.instance.client;
   final ImagePicker _imagePicker = ImagePicker();
 
-  // Ambil rideId dari arguments saat navigasi
-  final String rideId = Get.arguments as String;
+  // rideId akan di-set di onInit agar Get.arguments tersedia
+  late final String rideId;
 
   final TextEditingController messageController = TextEditingController();
   final ScrollController scrollController = ScrollController();
@@ -58,7 +60,18 @@ class ChatController extends GetxController {
   @override
   void onInit() {
     super.onInit();
-    _subscribeToMessages();
+    // Set rideId dari arguments (jika tidak ada, lempar error agar mudah dideteksi)
+    final arg = Get.arguments;
+    if (arg is String && arg.isNotEmpty) {
+      rideId = arg;
+    } else {
+      throw Exception(
+        'ChatController: rideId tidak ditemukan di Get.arguments',
+      );
+    }
+
+    _listenForMessages();
+    _loadUsersInfo();
   }
 
   @override
@@ -70,30 +83,75 @@ class ChatController extends GetxController {
   }
 
   void _listenForMessages() {
+    _chatSubscription?.cancel();
     _chatSubscription = _supabase
         .from('messages')
         .stream(primaryKey: ['id'])
-        .eq('ride_id', rideId) // Filter pesan berdasarkan ID perjalanan
-        .order('created_at', ascending: true)
-        .listen((List<Map<String, dynamic>> data) {
-          // Konversi data JSON dari Supabase ke Model Message
-          final messageList = data.map((json) {
-            // Pastikan model Message Anda memiliki factory fromJson/fromMap
-            // yang bisa menangani format waktu ISO8601 string
-            return Message.fromJson(json);
-          }).toList();
+        .eq('ride_id', rideId)
+        .listen(
+          (List<Map<String, dynamic>> data) {
+            try {
+              // Salin data mentah dan pastikan tipe Map<String, dynamic>
+              final rawList = data
+                  .map((e) => Map<String, dynamic>.from(e))
+                  .toList();
 
-          uiState.value = uiState.value.copyWith(messages: messageList);
+              DateTime _toDate(dynamic v) {
+                if (v == null) return DateTime.fromMillisecondsSinceEpoch(0);
+                if (v is DateTime) return v;
+                if (v is int) return DateTime.fromMillisecondsSinceEpoch(v);
+                if (v is String) {
+                  final s = v.trim();
+                  if (s.isEmpty) return DateTime.fromMillisecondsSinceEpoch(0);
+                  try {
+                    return DateTime.parse(s);
+                  } catch (_) {}
+                  try {
+                    return DateTime.fromMillisecondsSinceEpoch(int.parse(s));
+                  } catch (_) {}
+                }
+                return DateTime.fromMillisecondsSinceEpoch(0);
+              }
 
-          // Auto-scroll ke bawah
-          Future.delayed(const Duration(milliseconds: 100), () {
-            if (scrollController.hasClients) {
-              scrollController.jumpTo(
-                scrollController.position.maxScrollExtent,
-              );
+              // Normalisasi setiap item agar cocok dengan Message.fromJson
+              final messageList = rawList.map((json) {
+                final m = Map<String, dynamic>.from(json);
+
+                // normalisasi timestamp --> createdAt (DateTime)
+                final createdRaw =
+                    m['created_at'] ?? m['createdAt'] ?? m['ts'] ?? m['time'];
+                m['createdAt'] = _toDate(createdRaw);
+
+                // normalisasi nama field lain yang sering berbeda
+                if (m.containsKey('image_url')) m['imageUrl'] = m['image_url'];
+                if (m.containsKey('sender_id')) m['senderId'] = m['sender_id'];
+                if (m.containsKey('ride_id')) m['rideId'] = m['ride_id'];
+                if (m.containsKey('photo_url')) m['photoUrl'] = m['photo_url'];
+
+                return Message.fromJson(m);
+              }).toList();
+
+              // pastikan terurut berdasarkan createdAt (asumsikan Message.createdAt adalah DateTime)
+              messageList.sort((a, b) => a.createdAt.compareTo(b.createdAt));
+
+              uiState.value = uiState.value.copyWith(messages: messageList);
+
+              // Auto-scroll ke bawah
+              Future.delayed(const Duration(milliseconds: 100), () {
+                if (scrollController.hasClients) {
+                  scrollController.jumpTo(
+                    scrollController.position.maxScrollExtent,
+                  );
+                }
+              });
+            } catch (e) {
+              print('Error processing incoming messages: $e');
             }
-          });
-        });
+          },
+          onError: (err) {
+            print('Chat stream error: $err');
+          },
+        );
   }
 
   Future<void> _loadUsersInfo() async {
@@ -106,10 +164,10 @@ class ChatController extends GetxController {
           .from('rides')
           .select('passenger_id, driver_id')
           .eq('id', rideId)
-          .single();
+          .maybeSingle();
 
-      final passengerId = rideData['passenger_id'];
-      final driverId = rideData['driver_id'];
+      final passengerId = rideData?['passenger_id'];
+      final driverId = rideData?['driver_id'];
 
       // Tentukan ID lawan bicara
       final otherUserId = (currentUserId == passengerId)
@@ -119,9 +177,7 @@ class ChatController extends GetxController {
       // Ambil Foto Profil User Saat Ini
       final currentUserRes = await _supabase
           .from('users')
-          .select(
-            'photo_url',
-          ) // Pastikan nama kolom di DB sesuai (misal: photo_url atau profile_image)
+          .select('photo_url')
           .eq('id', currentUserId)
           .maybeSingle();
 
@@ -133,11 +189,15 @@ class ChatController extends GetxController {
             .from('users')
             .select('name, photo_url')
             .eq('id', otherUserId)
-            .single();
+            .maybeSingle();
 
         uiState.value = uiState.value.copyWith(
-          otherUserName: otherUserRes['name'] ?? 'User',
-          otherUserPhotoUrl: otherUserRes['photo_url'],
+          otherUserName: otherUserRes?['name'] ?? 'User',
+          otherUserPhotoUrl: otherUserRes?['photo_url'],
+          currentUserPhotoUrl: currentUserPhoto,
+        );
+      } else {
+        uiState.value = uiState.value.copyWith(
           currentUserPhotoUrl: currentUserPhoto,
         );
       }
@@ -170,7 +230,6 @@ class ChatController extends GetxController {
         'sender_id': currentUserId,
         'content': textToSend,
         'type': 'text',
-        // 'created_at': akan diisi otomatis oleh default value DB
       });
     } catch (e) {
       print('Error sending message: $e');
@@ -182,7 +241,7 @@ class ChatController extends GetxController {
     try {
       final XFile? image = await _imagePicker.pickImage(
         source: ImageSource.gallery,
-        imageQuality: 70, // Kompres sedikit agar upload lebih cepat
+        imageQuality: 70,
       );
 
       if (image != null) {
@@ -190,6 +249,7 @@ class ChatController extends GetxController {
       }
     } catch (e) {
       print('Error picking image: $e');
+      Get.snackbar('Error', 'Gagal memilih gambar');
     }
   }
 
@@ -200,13 +260,11 @@ class ChatController extends GetxController {
     uiState.value = uiState.value.copyWith(isUploading: true);
 
     try {
-      // Buat nama file unik
       final fileExt = imageFile.path.split('.').last;
       final fileName =
           '$rideId/${DateTime.now().millisecondsSinceEpoch}.$fileExt';
 
-      // 1. Upload ke Supabase Storage (Bucket: 'chat-attachments')
-      // Pastikan Anda sudah membuat bucket ini di dashboard Supabase dan set ke Public
+      // Upload ke Supabase Storage (Bucket: 'chat-attachments')
       await _supabase.storage
           .from('chat-attachments')
           .upload(
@@ -216,15 +274,33 @@ class ChatController extends GetxController {
           );
 
       // 2. Dapatkan URL Public
-      final imageUrl = _supabase.storage
+      final dynamic publicRes = _supabase.storage
           .from('chat-attachments')
           .getPublicUrl(fileName);
 
-      // 3. Simpan Pesan Gambar ke Database
+      String imageUrl = '';
+      if (publicRes is String) {
+        imageUrl = publicRes;
+      } else if (publicRes is Map) {
+        imageUrl =
+            (publicRes['publicUrl'] ??
+                    publicRes['public_url'] ??
+                    publicRes['publicurl'] ??
+                    '')
+                .toString();
+      } else {
+        imageUrl = publicRes?.toString() ?? '';
+      }
+
+      if (imageUrl.isEmpty) {
+        throw Exception('Gagal mendapatkan public URL gambar');
+      }
+
+      // Simpan Pesan Gambar ke Database
       await _supabase.from('messages').insert({
         'ride_id': rideId,
         'sender_id': currentUserId,
-        'content': '', // Kosong untuk gambar, atau bisa isi deskripsi
+        'content': '',
         'image_url': imageUrl,
         'type': 'image',
       });

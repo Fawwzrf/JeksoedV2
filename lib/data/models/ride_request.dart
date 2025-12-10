@@ -1,6 +1,5 @@
 // filepath: lib/data/models/ride_request.dart
 
-import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 
 class RideRequest {
@@ -52,39 +51,132 @@ class RideRequest {
     this.driverCurrentLocation,
   });
 
-  factory RideRequest.fromMap(Map<String, dynamic> data, String id) {
-    return RideRequest(
-      id: id,
-      passengerId: data['passengerId'] ?? '',
-      passengerName: data['passengerName'] ?? 'Unknown',
-      passengerRating: (data['passengerRating'] ?? 0.0).toDouble(),
-      passengerPhone: data['passengerPhone'] ?? '',
-      pickupLocation: LatLng(
-        (data['pickupLocation']['latitude'] ?? 0.0).toDouble(),
-        (data['pickupLocation']['longitude'] ?? 0.0).toDouble(),
-      ),
-      destinationLocation: LatLng(
-        (data['destinationLocation']['latitude'] ?? 0.0).toDouble(),
-        (data['destinationLocation']['longitude'] ?? 0.0).toDouble(),
-      ),
-      pickupAddress: data['pickupAddress'] ?? '',
-      destinationAddress: data['destinationAddress'] ?? '',
-      distance: (data['distance'] ?? 0.0).toDouble(),
-      duration: (data['duration'] ?? 0).toInt(),
-      fare: (data['fare'] ?? 0).toInt(),
-      status: data['status'] ?? 'pending',
-      driverId: data['driverId'],
-      createdAt: (data['createdAt'] as Timestamp?)?.toDate(),
-      acceptedAt: (data['acceptedAt'] as Timestamp?)?.toDate(),
-      completedAt: (data['completedAt'] as Timestamp?)?.toDate(),
-      rideType: data['rideType'] ?? 'motor',
-      paymentMethod: data['paymentMethod'] ?? 'cash',
-      encodedPolyline: data['encodedPolyline'],
-      rating: (data['rating'] as int?),
-      driverCurrentLocation: data['driverCurrentLocation'] != null
-          ? Map<String, double>.from(data['driverCurrentLocation'])
-          : null,
+  static double _toDouble(dynamic v) {
+    if (v == null) return 0.0;
+    if (v is double) return v;
+    if (v is int) return v.toDouble();
+    return double.tryParse(v.toString()) ?? 0.0;
+  }
+
+  static int _toInt(dynamic v) {
+    if (v == null) return 0;
+    if (v is int) return v;
+    if (v is double) return v.toInt();
+    return int.tryParse(v.toString()) ?? 0;
+  }
+
+  static DateTime? _toDateTime(dynamic v) {
+    if (v == null) return null;
+    if (v is DateTime) return v;
+    if (v is int) {
+      // treat as milliseconds if large, else seconds
+      if (v > 1e12) return DateTime.fromMillisecondsSinceEpoch(v);
+      return DateTime.fromMillisecondsSinceEpoch(v * 1000);
+    }
+    if (v is String) {
+      final s = v.trim();
+      if (s.isEmpty) return null;
+      try {
+        return DateTime.parse(s);
+      } catch (_) {
+        final n = int.tryParse(s);
+        if (n != null) {
+          if (n > 1e12) return DateTime.fromMillisecondsSinceEpoch(n);
+          return DateTime.fromMillisecondsSinceEpoch(n * 1000);
+        }
+      }
+    }
+    if (v is Map) {
+      // handle Firestore-like map {seconds: .., nanoseconds: ..}
+      final seconds = v['seconds'] ?? v['sec'];
+      final nanos = v['nanoseconds'] ?? v['nanos'] ?? 0;
+      if (seconds != null) {
+        final s = seconds is int ? seconds : int.tryParse(seconds.toString());
+        final ns = nanos is int ? nanos : int.tryParse(nanos.toString()) ?? 0;
+        if (s != null) {
+          return DateTime.fromMillisecondsSinceEpoch(
+            s * 1000 + (ns / 1000000).round(),
+          );
+        }
+      }
+    }
+    return null;
+  }
+
+  // Factory for Supabase / JSON payloads
+  factory RideRequest.fromJson(Map<String, dynamic> m) {
+    final map = Map<String, dynamic>.from(m);
+    LatLng parseLatLng(dynamic src, String latKey, String lngKey) {
+      if (src is Map) {
+        final lat = _toDouble(src['latitude'] ?? src['lat'] ?? src[latKey]);
+        final lng = _toDouble(src['longitude'] ?? src['lng'] ?? src[lngKey]);
+        return LatLng(lat, lng);
+      }
+      final lat = _toDouble(map[latKey] ?? map['pickup_lat'] ?? 0.0);
+      final lng = _toDouble(map[lngKey] ?? map['pickup_lng'] ?? 0.0);
+      return LatLng(lat, lng);
+    }
+
+    final pickup = parseLatLng(
+      map['pickupLocation'] ?? map['pickup_location'] ?? map,
+      'pickupLocation',
+      'pickupLocation',
     );
+    final dest = parseLatLng(
+      map['destinationLocation'] ?? map['destination_location'] ?? map,
+      'destinationLocation',
+      'destinationLocation',
+    );
+
+    Map<String, double>? driverLoc;
+    if (map['driverCurrentLocation'] != null) {
+      final raw = map['driverCurrentLocation'];
+      if (raw is Map) {
+        driverLoc = raw.map((k, v) => MapEntry(k.toString(), _toDouble(v)));
+      }
+    }
+
+    return RideRequest(
+      id: (map['id'] ?? map['rideId'] ?? map['requestId'] ?? '').toString(),
+      passengerId: (map['passengerId'] ?? map['passenger_id'] ?? '').toString(),
+      passengerName:
+          (map['passengerName'] ?? map['passenger_name'] ?? 'Unknown')
+              .toString(),
+      passengerRating: _toDouble(
+        map['passengerRating'] ?? map['passenger_rating'] ?? 0.0,
+      ),
+      passengerPhone: (map['passengerPhone'] ?? map['passenger_phone'] ?? '')
+          .toString(),
+      pickupLocation: pickup,
+      destinationLocation: dest,
+      pickupAddress: (map['pickupAddress'] ?? map['pickup_address'] ?? '')
+          .toString(),
+      destinationAddress:
+          (map['destinationAddress'] ?? map['destination_address'] ?? '')
+              .toString(),
+      distance: _toDouble(map['distance'] ?? 0.0),
+      duration: _toInt(map['duration'] ?? 0),
+      fare: _toInt(map['fare'] ?? 0),
+      status: (map['status'] ?? 'pending').toString(),
+      driverId: (map['driverId'] ?? map['driver_id'])?.toString(),
+      createdAt: _toDateTime(
+        map['createdAt'] ?? map['created_at'] ?? map['timestamp'],
+      ),
+      acceptedAt: _toDateTime(map['acceptedAt'] ?? map['accepted_at']),
+      completedAt: _toDateTime(map['completedAt'] ?? map['completed_at']),
+      rideType: (map['rideType'] ?? map['ride_type'] ?? 'motor').toString(),
+      paymentMethod: (map['paymentMethod'] ?? map['payment_method'] ?? 'cash')
+          .toString(),
+      encodedPolyline: (map['encodedPolyline'] ?? map['encoded_polyline'])
+          ?.toString(),
+      rating: map['rating'] != null ? _toInt(map['rating']) : null,
+      driverCurrentLocation: driverLoc,
+    );
+  }
+
+  // Keep fromMap for backwards compatibility (Firestore-style)
+  factory RideRequest.fromMap(Map<String, dynamic> data, String id) {
+    return RideRequest.fromJson({...data, 'id': id});
   }
 
   Map<String, dynamic> toMap() {
@@ -108,11 +200,10 @@ class RideRequest {
       'fare': fare,
       'status': status,
       'driverId': driverId,
-      'createdAt': createdAt != null ? Timestamp.fromDate(createdAt!) : null,
-      'acceptedAt': acceptedAt != null ? Timestamp.fromDate(acceptedAt!) : null,
-      'completedAt': completedAt != null
-          ? Timestamp.fromDate(completedAt!)
-          : null,
+      // use ISO string for storage in Supabase / REST
+      'createdAt': createdAt?.toIso8601String(),
+      'acceptedAt': acceptedAt?.toIso8601String(),
+      'completedAt': completedAt?.toIso8601String(),
       'rideType': rideType,
       'paymentMethod': paymentMethod,
       'encodedPolyline': encodedPolyline,

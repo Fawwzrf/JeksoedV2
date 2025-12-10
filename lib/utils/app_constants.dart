@@ -9,6 +9,18 @@ class AppConstants {
   static const String appVersion = '1.0.0';
   static const String appDescription = 'Ride sharing app built with Flutter';
 
+  // Supabase Configuration
+  static const String supabaseUrl = 'https://eabxqqzeuxokyfgtrnku.supabase.co';
+  static const String supabaseAnonKey =
+      'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVhYnhxcXpldXhva3lmZ3Rybmt1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjUwOTQwOTIsImV4cCI6MjA4MDY3MDA5Mn0.2QtFdfSvBg1vdSbl-GQVfEifcx289neyL7jpqpoyoR8';
+
+  // Table Names
+  static const String usersTable = 'users';
+  static const String ridesTable = 'rides';
+  static const String driversTable = 'drivers';
+  static const String paymentsTable = 'payments';
+  static const String ratingsTable = 'ratings';
+
   // API Endpoints (when needed)
   static const String baseUrl = 'https://your-api-endpoint.com/api/v1';
   static const String authEndpoint = '$baseUrl/auth';
@@ -37,6 +49,12 @@ class AppConstants {
   static const double maximumRideDistance = 50.0; // km
   static const int rideSearchRadius = 10; // km
   static const int maxDriverWaitTime = 300; // seconds (5 minutes)
+
+  // Pricing
+  static const double baseFare = 5000.0; // Rp 5.000
+  static const double perKmRate = 2000.0; // Rp 2.000 per km
+  static const double premiumMultiplier = 1.5; // 150% dari standar
+  static const double sharedMultiplier = 0.8; // 80% dari standar
 
   // UI Related
   static const double borderRadius = 8.0;

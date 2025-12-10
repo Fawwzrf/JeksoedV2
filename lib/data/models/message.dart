@@ -4,62 +4,69 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 
 class Message {
   final String id;
-  final String text;
+  final String? rideId;
+  final String? senderId;
+  final String content;
   final String? imageUrl;
-  final String type; // "text" or "image"
-  final String senderId;
-  final Timestamp? timestamp;
+  final String type;
+  final DateTime createdAt;
 
   Message({
-    this.id = '',
-    this.text = '',
+    required this.id,
+    this.rideId,
+    this.senderId,
+    required this.content,
     this.imageUrl,
     this.type = 'text',
-    required this.senderId,
-    this.timestamp,
+    required this.createdAt,
   });
 
-  factory Message.fromMap(Map<String, dynamic> data, String id) {
+  // Factory yang aman untuk berbagai format payload dari Supabase
+  factory Message.fromJson(Map<String, dynamic> json) {
+    dynamic createdRaw =
+        json['createdAt'] ??
+        json['created_at'] ??
+        json['ts'] ??
+        json['time'] ??
+        json['timestamp'];
+
+    DateTime parseDate(dynamic v) {
+      if (v == null) return DateTime.fromMillisecondsSinceEpoch(0);
+      if (v is DateTime) return v;
+      if (v is int) return DateTime.fromMillisecondsSinceEpoch(v);
+      if (v is String) {
+        final s = v.trim();
+        if (s.isEmpty) return DateTime.fromMillisecondsSinceEpoch(0);
+        try {
+          return DateTime.parse(s);
+        } catch (_) {}
+        try {
+          return DateTime.fromMillisecondsSinceEpoch(int.parse(s));
+        } catch (_) {}
+      }
+      return DateTime.fromMillisecondsSinceEpoch(0);
+    }
+
     return Message(
-      id: id,
-      text: data['text'] ?? '',
-      imageUrl: data['imageUrl'],
-      type: data['type'] ?? 'text',
-      senderId: data['senderId'] ?? '',
-      timestamp: data['timestamp'] as Timestamp?,
+      id: (json['id'] ?? json['message_id'] ?? '').toString(),
+      rideId: (json['rideId'] ?? json['ride_id'])?.toString(),
+      senderId: (json['senderId'] ?? json['sender_id'])?.toString(),
+      content: (json['content'] ?? '').toString(),
+      imageUrl: (json['imageUrl'] ?? json['image_url'])?.toString(),
+      type: (json['type'] ?? 'text').toString(),
+      createdAt: parseDate(createdRaw),
     );
   }
 
-  Map<String, dynamic> toMap() {
+  Map<String, dynamic> toJson() {
     return {
-      'text': text,
-      'imageUrl': imageUrl,
+      'id': id,
+      'ride_id': rideId,
+      'sender_id': senderId,
+      'content': content,
+      'image_url': imageUrl,
       'type': type,
-      'senderId': senderId,
-      'timestamp': timestamp ?? FieldValue.serverTimestamp(),
+      'created_at': createdAt.toIso8601String(),
     };
-  }
-
-  Message copyWith({
-    String? id,
-    String? text,
-    String? imageUrl,
-    String? type,
-    String? senderId,
-    Timestamp? timestamp,
-  }) {
-    return Message(
-      id: id ?? this.id,
-      text: text ?? this.text,
-      imageUrl: imageUrl ?? this.imageUrl,
-      type: type ?? this.type,
-      senderId: senderId ?? this.senderId,
-      timestamp: timestamp ?? this.timestamp,
-    );
-  }
-
-  @override
-  String toString() {
-    return 'Message(id: $id, text: $text, type: $type, senderId: $senderId)';
   }
 }

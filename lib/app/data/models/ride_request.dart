@@ -1,85 +1,114 @@
 class RideRequest {
   final String id;
-  final String passengerId;
+  final String? passengerId;
   final String? driverId;
-  final LocationData pickupLocation;
-  final LocationData destinationLocation;
-  final RideStatus status;
-  final RideType rideType;
-  final double estimatedDistance;
-  final double estimatedDuration;
-  final double estimatedFare;
-  final double? actualFare;
-  final DateTime requestTime;
-  final DateTime? acceptedTime;
-  final DateTime? startTime;
-  final DateTime? completedTime;
+  final double? pickupLat;
+  final double? pickupLng;
+  final String? pickupAddress;
+  final double? destLat;
+  final double? destLng;
+  final String? destAddress;
+  final String? rideType;
+  final String? paymentMethod;
+  final String status;
+  final double? fare;
+  final double? distance;
+  final double? duration;
   final String? notes;
-  final PaymentMethod paymentMethod;
-  final RideRating? rating;
+  final DateTime createdAt;
+  final DateTime? acceptedAt;
+  final DateTime? startedAt;
+  final DateTime? completedAt;
+  final DateTime? cancelledAt;
+  final int? rating;
+  final String? reviewComment;
 
   RideRequest({
     required this.id,
-    required this.passengerId,
+    this.passengerId,
     this.driverId,
-    required this.pickupLocation,
-    required this.destinationLocation,
-    required this.status,
-    required this.rideType,
-    required this.estimatedDistance,
-    required this.estimatedDuration,
-    required this.estimatedFare,
-    this.actualFare,
-    required this.requestTime,
-    this.acceptedTime,
-    this.startTime,
-    this.completedTime,
+    this.pickupLat,
+    this.pickupLng,
+    this.pickupAddress,
+    this.destLat,
+    this.destLng,
+    this.destAddress,
+    this.rideType,
+    this.paymentMethod,
+    this.status = 'requested',
+    this.fare,
+    this.distance,
+    this.duration,
     this.notes,
-    required this.paymentMethod,
+    required this.createdAt,
+    this.acceptedAt,
+    this.startedAt,
+    this.completedAt,
+    this.cancelledAt,
     this.rating,
+    this.reviewComment,
   });
 
+  static DateTime _parseDate(dynamic v) {
+    if (v == null) return DateTime.fromMillisecondsSinceEpoch(0);
+    if (v is DateTime) return v;
+    if (v is int) return DateTime.fromMillisecondsSinceEpoch(v);
+    if (v is String) {
+      final s = v.trim();
+      if (s.isEmpty) return DateTime.fromMillisecondsSinceEpoch(0);
+      try {
+        return DateTime.parse(s);
+      } catch (_) {}
+      try {
+        return DateTime.fromMillisecondsSinceEpoch(int.parse(s));
+      } catch (_) {}
+    }
+    return DateTime.fromMillisecondsSinceEpoch(0);
+  }
+
+  static DateTime? _parseNullableDate(dynamic v) {
+    if (v == null) return null;
+    final d = _parseDate(v);
+    if (d.millisecondsSinceEpoch == 0) return null;
+    return d;
+  }
+
   factory RideRequest.fromJson(Map<String, dynamic> json) {
+    final m = Map<String, dynamic>.from(json);
+
+    double? _toDouble(dynamic x) {
+      if (x == null) return null;
+      if (x is double) return x;
+      if (x is int) return x.toDouble();
+      return double.tryParse(x.toString());
+    }
+
     return RideRequest(
-      id: json['id'] ?? '',
-      passengerId: json['passenger_id'] ?? '',
-      driverId: json['driver_id'],
-      pickupLocation: LocationData.fromJson(json['pickup_location'] ?? {}),
-      destinationLocation: LocationData.fromJson(
-        json['destination_location'] ?? {},
+      id: (m['id'] ?? m['ride_id'] ?? m['request_id'] ?? '').toString(),
+      passengerId: (m['passenger_id'] ?? m['passengerId'])?.toString(),
+      driverId: (m['driver_id'] ?? m['driverId'])?.toString(),
+      pickupLat: _toDouble(m['pickup_lat'] ?? m['pickupLat']),
+      pickupLng: _toDouble(m['pickup_lng'] ?? m['pickupLng']),
+      pickupAddress: (m['pickup_address'] ?? m['pickupAddress'])?.toString(),
+      destLat: _toDouble(m['dest_lat'] ?? m['destLat']),
+      destLng: _toDouble(m['dest_lng'] ?? m['destLng']),
+      destAddress: (m['dest_address'] ?? m['destAddress'])?.toString(),
+      rideType: (m['ride_type'] ?? m['rideType'])?.toString(),
+      paymentMethod: (m['payment_method'] ?? m['paymentMethod'])?.toString(),
+      status: (m['status'] ?? 'requested').toString(),
+      fare: _toDouble(m['fare']),
+      distance: _toDouble(m['distance']),
+      duration: _toDouble(m['duration']),
+      notes: (m['notes'] ?? m['note'])?.toString(),
+      createdAt: _parseDate(
+        m['created_at'] ?? m['createdAt'] ?? m['createdAtIso'],
       ),
-      status: RideStatus.values.firstWhere(
-        (status) => status.name == json['status'],
-        orElse: () => RideStatus.requested,
-      ),
-      rideType: RideType.values.firstWhere(
-        (type) => type.name == json['ride_type'],
-        orElse: () => RideType.regular,
-      ),
-      estimatedDistance: json['estimated_distance']?.toDouble() ?? 0.0,
-      estimatedDuration: json['estimated_duration']?.toDouble() ?? 0.0,
-      estimatedFare: json['estimated_fare']?.toDouble() ?? 0.0,
-      actualFare: json['actual_fare']?.toDouble(),
-      requestTime: DateTime.parse(
-        json['request_time'] ?? DateTime.now().toIso8601String(),
-      ),
-      acceptedTime: json['accepted_time'] != null
-          ? DateTime.parse(json['accepted_time'])
-          : null,
-      startTime: json['start_time'] != null
-          ? DateTime.parse(json['start_time'])
-          : null,
-      completedTime: json['completed_time'] != null
-          ? DateTime.parse(json['completed_time'])
-          : null,
-      notes: json['notes'],
-      paymentMethod: PaymentMethod.values.firstWhere(
-        (method) => method.name == json['payment_method'],
-        orElse: () => PaymentMethod.cash,
-      ),
-      rating: json['rating'] != null
-          ? RideRating.fromJson(json['rating'])
-          : null,
+      acceptedAt: _parseNullableDate(m['accepted_at'] ?? m['acceptedAt']),
+      startedAt: _parseNullableDate(m['started_at'] ?? m['startedAt']),
+      completedAt: _parseNullableDate(m['completed_at'] ?? m['completedAt']),
+      cancelledAt: _parseNullableDate(m['cancelled_at'] ?? m['cancelledAt']),
+      rating: m['rating'] != null ? int.tryParse(m['rating'].toString()) : null,
+      reviewComment: (m['review_comment'] ?? m['reviewComment'])?.toString(),
     );
   }
 
@@ -88,170 +117,26 @@ class RideRequest {
       'id': id,
       'passenger_id': passengerId,
       'driver_id': driverId,
-      'pickup_location': pickupLocation.toJson(),
-      'destination_location': destinationLocation.toJson(),
-      'status': status.name,
-      'ride_type': rideType.name,
-      'estimated_distance': estimatedDistance,
-      'estimated_duration': estimatedDuration,
-      'estimated_fare': estimatedFare,
-      'actual_fare': actualFare,
-      'request_time': requestTime.toIso8601String(),
-      'accepted_time': acceptedTime?.toIso8601String(),
-      'start_time': startTime?.toIso8601String(),
-      'completed_time': completedTime?.toIso8601String(),
+      'pickup_lat': pickupLat,
+      'pickup_lng': pickupLng,
+      'pickup_address': pickupAddress,
+      'dest_lat': destLat,
+      'dest_lng': destLng,
+      'dest_address': destAddress,
+      'ride_type': rideType,
+      'payment_method': paymentMethod,
+      'status': status,
+      'fare': fare,
+      'distance': distance,
+      'duration': duration,
       'notes': notes,
-      'payment_method': paymentMethod.name,
-      'rating': rating?.toJson(),
-    };
-  }
-
-  RideRequest copyWith({
-    String? id,
-    String? passengerId,
-    String? driverId,
-    LocationData? pickupLocation,
-    LocationData? destinationLocation,
-    RideStatus? status,
-    RideType? rideType,
-    double? estimatedDistance,
-    double? estimatedDuration,
-    double? estimatedFare,
-    double? actualFare,
-    DateTime? requestTime,
-    DateTime? acceptedTime,
-    DateTime? startTime,
-    DateTime? completedTime,
-    String? notes,
-    PaymentMethod? paymentMethod,
-    RideRating? rating,
-  }) {
-    return RideRequest(
-      id: id ?? this.id,
-      passengerId: passengerId ?? this.passengerId,
-      driverId: driverId ?? this.driverId,
-      pickupLocation: pickupLocation ?? this.pickupLocation,
-      destinationLocation: destinationLocation ?? this.destinationLocation,
-      status: status ?? this.status,
-      rideType: rideType ?? this.rideType,
-      estimatedDistance: estimatedDistance ?? this.estimatedDistance,
-      estimatedDuration: estimatedDuration ?? this.estimatedDuration,
-      estimatedFare: estimatedFare ?? this.estimatedFare,
-      actualFare: actualFare ?? this.actualFare,
-      requestTime: requestTime ?? this.requestTime,
-      acceptedTime: acceptedTime ?? this.acceptedTime,
-      startTime: startTime ?? this.startTime,
-      completedTime: completedTime ?? this.completedTime,
-      notes: notes ?? this.notes,
-      paymentMethod: paymentMethod ?? this.paymentMethod,
-      rating: rating ?? this.rating,
-    );
-  }
-}
-
-class LocationData {
-  final double latitude;
-  final double longitude;
-  final String address;
-  final String? placeId;
-
-  LocationData({
-    required this.latitude,
-    required this.longitude,
-    required this.address,
-    this.placeId,
-  });
-
-  factory LocationData.fromJson(Map<String, dynamic> json) {
-    return LocationData(
-      latitude: json['latitude']?.toDouble() ?? 0.0,
-      longitude: json['longitude']?.toDouble() ?? 0.0,
-      address: json['address'] ?? '',
-      placeId: json['place_id'],
-    );
-  }
-
-  Map<String, dynamic> toJson() {
-    return {
-      'latitude': latitude,
-      'longitude': longitude,
-      'address': address,
-      'place_id': placeId,
-    };
-  }
-}
-
-class RideRating {
-  final int rating;
-  final String? comment;
-  final DateTime createdAt;
-
-  RideRating({required this.rating, this.comment, required this.createdAt});
-
-  factory RideRating.fromJson(Map<String, dynamic> json) {
-    return RideRating(
-      rating: json['rating'] ?? 0,
-      comment: json['comment'],
-      createdAt: DateTime.parse(
-        json['created_at'] ?? DateTime.now().toIso8601String(),
-      ),
-    );
-  }
-
-  Map<String, dynamic> toJson() {
-    return {
-      'rating': rating,
-      'comment': comment,
       'created_at': createdAt.toIso8601String(),
+      'accepted_at': acceptedAt?.toIso8601String(),
+      'started_at': startedAt?.toIso8601String(),
+      'completed_at': completedAt?.toIso8601String(),
+      'cancelled_at': cancelledAt?.toIso8601String(),
+      'rating': rating,
+      'review_comment': reviewComment,
     };
-  }
-}
-
-enum RideStatus {
-  requested,
-  accepted,
-  driverArriving,
-  inProgress,
-  completed,
-  cancelled,
-}
-
-enum RideType { regular, premium, shared }
-
-enum PaymentMethod { cash, creditCard, digitalWallet }
-
-extension RideStatusExtension on RideStatus {
-  String get displayName {
-    switch (this) {
-      case RideStatus.requested:
-        return 'Requested';
-      case RideStatus.accepted:
-        return 'Accepted';
-      case RideStatus.driverArriving:
-        return 'Driver Arriving';
-      case RideStatus.inProgress:
-        return 'In Progress';
-      case RideStatus.completed:
-        return 'Completed';
-      case RideStatus.cancelled:
-        return 'Cancelled';
-    }
-  }
-
-  String get description {
-    switch (this) {
-      case RideStatus.requested:
-        return 'Looking for a driver';
-      case RideStatus.accepted:
-        return 'Driver found and on the way';
-      case RideStatus.driverArriving:
-        return 'Driver is arriving at pickup location';
-      case RideStatus.inProgress:
-        return 'Trip in progress';
-      case RideStatus.completed:
-        return 'Trip completed successfully';
-      case RideStatus.cancelled:
-        return 'Trip was cancelled';
-    }
   }
 }

@@ -6,14 +6,14 @@ import 'app/data/services/auth_service.dart';
 import 'app/data/services/ride_service.dart';
 import 'app/controllers/preview_controller.dart';
 import 'utils/app_colors.dart';
+import 'utils/app_constants.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
   await Supabase.initialize(
-    url: 'https://eabxqqzeuxokyfgtrnku.supabase.co',
-    anonKey:
-        'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVhYnhxcXpldXhva3lmZ3Rybmt1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjUwOTQwOTIsImV4cCI6MjA4MDY3MDA5Mn0.2QtFdfSvBg1vdSbl-GQVfEifcx289neyL7jpqpoyoR8',
+    url: AppConstants.supabaseUrl,
+    anonKey: AppConstants.supabaseAnonKey,
   );
 
   await initPreviewServices();

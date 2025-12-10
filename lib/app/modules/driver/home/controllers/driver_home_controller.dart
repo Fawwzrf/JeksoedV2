@@ -2,14 +2,12 @@ import 'dart:async';
 import 'package:get/get.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:geolocator/geolocator.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:firebase_auth/firebase_auth.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../../../../data/models/ride_request.dart';
 import '../../../../../data/models/driver_profile.dart';
 
 class DriverHomeController extends GetxController {
-  final FirebaseFirestore _firestore = FirebaseFirestore.instance;
-  final FirebaseAuth _auth = FirebaseAuth.instance;
+  final SupabaseClient _supabase = Supabase.instance.client;
 
   // Observables
   var isOnline = true.obs;
@@ -25,11 +23,13 @@ class DriverHomeController extends GetxController {
   var acceptingRideId = Rxn<String>();
   var markers = <Marker>[].obs;
 
-  // Map and Location
+  // Streams / subscriptions
+  StreamSubscription? _positionStream;
+  StreamSubscription? _rideRequestsStream;
+  StreamSubscription? _profileStream;
+
+  // Map controller (optional)
   GoogleMapController? _mapController;
-  StreamSubscription<Position>? _positionStream;
-  StreamSubscription<QuerySnapshot>? _rideRequestsStream;
-  StreamSubscription<DocumentSnapshot>? _profileStream;
 
   @override
   void onInit() {
@@ -56,7 +56,6 @@ class DriverHomeController extends GetxController {
 
   Future<void> _initializeLocation() async {
     try {
-      // Check permissions
       LocationPermission permission = await Geolocator.checkPermission();
       if (permission == LocationPermission.denied) {
         permission = await Geolocator.requestPermission();
@@ -71,7 +70,6 @@ class DriverHomeController extends GetxController {
         return;
       }
 
-      // Get current position
       Position position = await Geolocator.getCurrentPosition(
         desiredAccuracy: LocationAccuracy.high,
       );
@@ -79,12 +77,11 @@ class DriverHomeController extends GetxController {
       driverLocation.value = LatLng(position.latitude, position.longitude);
       _updateDriverLocationMarker();
 
-      // Listen to location changes
       _positionStream =
           Geolocator.getPositionStream(
             locationSettings: const LocationSettings(
               accuracy: LocationAccuracy.high,
-              distanceFilter: 10, // Update every 10 meters
+              distanceFilter: 10,
             ),
           ).listen((Position position) {
             driverLocation.value = LatLng(
@@ -92,7 +89,7 @@ class DriverHomeController extends GetxController {
               position.longitude,
             );
             _updateDriverLocationMarker();
-            _updateDriverLocationInFirestore(position);
+            _updateDriverLocationInBackend(position);
           });
     } catch (e) {
       Get.snackbar('Error', 'Failed to get location: $e');
@@ -111,15 +108,36 @@ class DriverHomeController extends GetxController {
     );
   }
 
-  Future<void> _updateDriverLocationInFirestore(Position position) async {
+  // helper unwrap untuk berbagai bentuk response Supabase / Postgrest
+  dynamic _unwrapResponse(dynamic res) {
     try {
-      final userId = _auth.currentUser?.uid;
+      // PostgrestResponse-like: has `.data`
+      if (res != null) {
+        // akses dynamic agar analyzer tidak compile-time error
+        final dyn = res as dynamic;
+        if (dyn.data != null) return dyn.data;
+      }
+    } catch (_) {}
+    try {
+      // Map-like { data: [...] }
+      if (res is Map && res.containsKey('data')) return res['data'];
+    } catch (_) {}
+    // fallback: if it's already a List (old behavior) return it
+    if (res is List) return res;
+    return res;
+  }
+
+  Future<void> _updateDriverLocationInBackend(Position position) async {
+    try {
+      final userId = _supabase.auth.currentUser?.id;
       if (userId != null) {
-        await _firestore.collection('driver_locations').doc(userId).set({
+        await _supabase.from('driver_locations').upsert({
+          'user_id': userId,
           'latitude': position.latitude,
           'longitude': position.longitude,
-          'updatedAt': FieldValue.serverTimestamp(),
-        }, SetOptions(merge: true));
+          'updated_at': DateTime.now().toIso8601String(),
+        });
+        // don't rely on .error; if the call throws it will be caught
       }
     } catch (e) {
       print('Error updating driver location: $e');
@@ -127,39 +145,50 @@ class DriverHomeController extends GetxController {
   }
 
   void _listenToDriverProfile() {
-    final userId = _auth.currentUser?.uid;
-    if (userId == null) return;
+    final userId = _supabase.auth.currentUser?.id;
+    if (userId == null) {
+      isLoadingProfile.value = false;
+      return;
+    }
 
     isLoadingProfile.value = true;
-    _profileStream = _firestore
-        .collection('users')
-        .doc(userId)
-        .snapshots()
+
+    // Realtime subscription to user's row; fallback to one-time fetch if realtime not needed
+    _profileStream = _supabase
+        .from('users:id=eq.$userId')
+        .stream(primaryKey: ['id'])
         .listen(
-          (snapshot) {
-            if (snapshot.exists) {
-              final data = snapshot.data() as Map<String, dynamic>;
+          (List<Map<String, dynamic>> data) async {
+            try {
+              if (data.isNotEmpty) {
+                final row = data.first;
+                final totalRating =
+                    (row['totalRating'] ?? row['total_rating'] ?? 0).toDouble();
+                final ratingCount =
+                    (row['ratingCount'] ?? row['rating_count'] ?? 0).toInt();
+                final averageRating = ratingCount > 0
+                    ? totalRating / ratingCount
+                    : 0.0;
 
-              // Calculate average rating
-              final totalRating = (data['totalRating'] ?? 0).toDouble();
-              final ratingCount = (data['ratingCount'] ?? 0).toInt();
-              final averageRating = ratingCount > 0
-                  ? totalRating / ratingCount
-                  : 0.0;
-
-              driverProfile.value = DriverProfile(
-                name: data['nama'] ?? 'Driver',
-                licensePlate: data['licensePlate'] ?? '',
-                photoUrl: data['photoUrl'],
-                balance: 'Rp${data['balance'] ?? 0}',
-                rating: averageRating.toStringAsFixed(1),
-                orderCount: '${data['completedTrips'] ?? 0}',
-              );
+                driverProfile.value = DriverProfile(
+                  name: row['nama'] ?? row['name'] ?? 'Driver',
+                  licensePlate:
+                      row['licensePlate'] ?? row['license_plate'] ?? '',
+                  photoUrl: row['photoUrl'] ?? row['photo_url'],
+                  balance: 'Rp${row['balance'] ?? 0}',
+                  rating: averageRating.toStringAsFixed(1),
+                  orderCount:
+                      '${row['completedTrips'] ?? row['completed_trips'] ?? 0}',
+                );
+              }
+            } catch (e) {
+              print('Error processing profile data: $e');
+            } finally {
+              isLoadingProfile.value = false;
             }
-            isLoadingProfile.value = false;
           },
-          onError: (error) {
-            print('Error listening to driver profile: $error');
+          onError: (err) {
+            print('Error listening to driver profile: $err');
             isLoadingProfile.value = false;
           },
         );
@@ -167,20 +196,25 @@ class DriverHomeController extends GetxController {
 
   Future<void> _checkForActiveTrip() async {
     try {
-      final userId = _auth.currentUser?.uid;
+      final userId = _supabase.auth.currentUser?.id;
       if (userId == null) return;
 
-      final snapshot = await _firestore
-          .collection('ride_requests')
-          .where('driverId', isEqualTo: userId)
-          .where('status', whereIn: ['accepted', 'arrived', 'started'])
-          .limit(1)
-          .get();
+      final res = await _supabase
+          .from('ride_requests')
+          .select()
+          .eq('driver_id', userId)
+          .in_('status', ['accepted', 'arrived', 'started'])
+          .limit(1);
 
-      if (snapshot.docs.isNotEmpty) {
-        final rideRequestId = snapshot.docs.first.id;
-        // Navigate to active trip
-        Get.toNamed('/trip/$rideRequestId');
+      final data = _unwrapResponse(res);
+      final rows = data is List
+          ? data
+          : (data is Map && data['rows'] is List ? data['rows'] : null);
+
+      if (rows is List && rows.isNotEmpty) {
+        final row = Map<String, dynamic>.from(rows.first as Map);
+        final ride = RideRequest.fromJson(Map<String, dynamic>.from(row));
+        Get.toNamed('/trip/${ride.id}');
       }
     } catch (e) {
       print('Error checking for active trip: $e');
@@ -189,35 +223,51 @@ class DriverHomeController extends GetxController {
 
   void _startListeningForRides() {
     _rideRequestsStream?.cancel();
-    _rideRequestsStream = _firestore
-        .collection('ride_requests')
-        .where('status', isEqualTo: 'pending')
-        .orderBy('createdAt', descending: true)
-        .snapshots()
+
+    _rideRequestsStream = _supabase
+        .from('ride_requests')
+        .stream(primaryKey: ['id'])
+        .eq('status', 'pending')
         .listen(
-          (snapshot) {
-            final newRequests = snapshot.docs.map((doc) {
-              final data = doc.data();
-              return RideRequest.fromMap(data, doc.id);
-            }).toList();
+          (List<Map<String, dynamic>> data) {
+            try {
+              final raw = data
+                  .map((e) => Map<String, dynamic>.from(e))
+                  .toList();
 
-            // Update ride requests
-            rideRequests.value = newRequests;
-
-            // Show popup for new requests
-            if (newRequests.isNotEmpty && popupRideRequest.value == null) {
-              popupRideRequest.value = newRequests.first;
-
-              // Auto dismiss after 30 seconds
-              Timer(const Duration(seconds: 30), () {
-                if (popupRideRequest.value?.id == newRequests.first.id) {
-                  dismissPopup();
-                }
+              // convert and sort by created_at (newest first)
+              raw.sort((a, b) {
+                final da = (a['created_at'] ?? a['createdAt']);
+                final db = (b['created_at'] ?? b['createdAt']);
+                DateTime pa =
+                    RideRequest._internalParseDate(da) ??
+                    DateTime.fromMillisecondsSinceEpoch(0);
+                DateTime pb =
+                    RideRequest._internalParseDate(db) ??
+                    DateTime.fromMillisecondsSinceEpoch(0);
+                return pb.compareTo(pa);
               });
+
+              final newRequests = raw
+                  .map((doc) => RideRequest.fromJson(doc))
+                  .toList();
+
+              rideRequests.value = newRequests;
+
+              if (newRequests.isNotEmpty && popupRideRequest.value == null) {
+                popupRideRequest.value = newRequests.first;
+                Timer(const Duration(seconds: 30), () {
+                  if (popupRideRequest.value?.id == newRequests.first.id) {
+                    dismissPopup();
+                  }
+                });
+              }
+            } catch (e) {
+              print('Error processing ride requests realtime: $e');
             }
           },
-          onError: (error) {
-            print('Error listening for rides: $error');
+          onError: (err) {
+            print('Error listening for rides: $err');
           },
         );
   }
@@ -247,25 +297,30 @@ class DriverHomeController extends GetxController {
     showOfflineDialog.value = false;
   }
 
-  void acceptRideRequest(RideRequest rideRequest) async {
+  Future<void> acceptRideRequest(RideRequest rideRequest) async {
     try {
       acceptingRideId.value = rideRequest.id;
-      final userId = _auth.currentUser?.uid;
-
+      final userId = _supabase.auth.currentUser?.id;
       if (userId == null) throw Exception('Driver not logged in');
 
-      // Update ride request with driver info
-      await _firestore.collection('ride_requests').doc(rideRequest.id).update({
-        'driverId': userId,
-        'status': 'accepted',
-        'acceptedAt': FieldValue.serverTimestamp(),
-      });
+      final res = await _supabase
+          .from('ride_requests')
+          .update({
+            'driver_id': userId,
+            'status': 'accepted',
+            'accepted_at': DateTime.now().toIso8601String(),
+          })
+          .eq('id', rideRequest.id);
 
-      // Clear popup
+      final data = _unwrapResponse(res);
+      // jika update mengembalikan list hasil, pastikan tidak kosong
+      if (data is List && data.isEmpty) {
+        throw Exception('No rows updated');
+      }
+
       popupRideRequest.value = null;
       acceptingRideId.value = null;
 
-      // Navigate to trip screen
       Get.toNamed('/trip/${rideRequest.id}');
     } catch (e) {
       acceptingRideId.value = null;
@@ -274,10 +329,7 @@ class DriverHomeController extends GetxController {
   }
 
   void rejectRideRequest(String rideId) {
-    // Remove from local list
     rideRequests.removeWhere((request) => request.id == rideId);
-
-    // Clear popup if it's the same request
     if (popupRideRequest.value?.id == rideId) {
       popupRideRequest.value = null;
     }
@@ -291,8 +343,8 @@ class DriverHomeController extends GetxController {
     Get.toNamed('/all-orders');
   }
 
-  void logout() {
-    _auth.signOut();
+  void logout() async {
+    await _supabase.auth.signOut();
     Get.offAllNamed('/cta');
   }
 }

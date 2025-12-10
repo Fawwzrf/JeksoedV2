@@ -1,10 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
-import 'package:firebase_auth/firebase_auth.dart';
+import '../../../../data/services/auth_service.dart';
 
 class ForgotPasswordController extends GetxController {
   final emailController = TextEditingController();
   final isLoading = false.obs;
+
+  // Get AuthService instance
+  final AuthService _authService = AuthService.to;
 
   void sendResetEmail() async {
     if (emailController.text.trim().isEmpty) {
@@ -30,42 +33,23 @@ class ForgotPasswordController extends GetxController {
     try {
       isLoading.value = true;
 
-      await FirebaseAuth.instance.sendPasswordResetEmail(
-        email: emailController.text.trim(),
+      // Gunakan AuthService dengan Supabase
+      final success = await _authService.resetPassword(
+        emailController.text.trim(),
       );
 
-      Get.snackbar(
-        'Berhasil',
-        'Email reset password telah dikirim. Silakan periksa inbox Anda',
-        backgroundColor: Colors.green,
-        colorText: Colors.white,
-        duration: Duration(seconds: 5),
-      );
+      if (success) {
+        Get.snackbar(
+          'Berhasil',
+          'Email reset password telah dikirim. Silakan periksa inbox Anda',
+          backgroundColor: Colors.green,
+          colorText: Colors.white,
+          duration: Duration(seconds: 5),
+        );
 
-      // Navigate back to login
-      Get.back();
-    } on FirebaseAuthException catch (e) {
-      String message;
-      switch (e.code) {
-        case 'user-not-found':
-          message = 'Email tidak terdaftar';
-          break;
-        case 'invalid-email':
-          message = 'Format email tidak valid';
-          break;
-        case 'too-many-requests':
-          message = 'Terlalu banyak percobaan. Coba lagi nanti';
-          break;
-        default:
-          message = 'Gagal mengirim email reset: ${e.message}';
+        // Navigate back to login
+        Get.back();
       }
-
-      Get.snackbar(
-        'Error',
-        message,
-        backgroundColor: Colors.red,
-        colorText: Colors.white,
-      );
     } catch (e) {
       Get.snackbar(
         'Error',
