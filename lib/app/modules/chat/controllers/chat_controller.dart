@@ -1,10 +1,6 @@
-// filepath: lib/app/modules/chat/controllers/chat_controller.dart
-
 import 'dart:io';
 import 'package:get/get.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:firebase_auth/firebase_auth.dart';
-import 'package:firebase_storage/firebase_storage.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:image_picker/image_picker.dart';
 import '../../../../data/models/message.dart';
 
@@ -45,86 +41,111 @@ class ChatUiState {
 }
 
 class ChatController extends GetxController {
-  final FirebaseFirestore _db = FirebaseFirestore.instance;
-  final FirebaseAuth _auth = FirebaseAuth.instance;
-  final FirebaseStorage _storage = FirebaseStorage.instance;
+  final SupabaseClient _supabase = Supabase.instance.client;
   final ImagePicker _imagePicker = ImagePicker();
 
-  final String rideRequestId;
-  String? get currentUserId => _auth.currentUser?.uid;
+  // Ambil rideId dari arguments saat navigasi
+  final String rideId = Get.arguments as String;
 
-  var uiState = ChatUiState().obs;
+  final TextEditingController messageController = TextEditingController();
+  final ScrollController scrollController = ScrollController();
 
-  ChatController({required this.rideRequestId});
+  // UI State (Observable)
+  final Rx<ChatUiState> uiState = ChatUiState().obs;
+
+  StreamSubscription? _chatSubscription;
 
   @override
   void onInit() {
     super.onInit();
-    if (currentUserId != null) {
-      _listenForMessages();
-      _loadUsersInfo();
-    }
+    _subscribeToMessages();
+  }
+
+  @override
+  void onClose() {
+    _chatSubscription?.cancel();
+    messageController.dispose();
+    scrollController.dispose();
+    super.onClose();
   }
 
   void _listenForMessages() {
-    _db
-        .collection('chats')
-        .doc(rideRequestId)
-        .collection('messages')
-        .orderBy('timestamp', descending: false)
-        .snapshots()
-        .listen((snapshot) {
-          final messageList = snapshot.docs
-              .map((doc) => Message.fromMap(doc.data(), doc.id))
-              .toList();
+    _chatSubscription = _supabase
+        .from('messages')
+        .stream(primaryKey: ['id'])
+        .eq('ride_id', rideId) // Filter pesan berdasarkan ID perjalanan
+        .order('created_at', ascending: true)
+        .listen((List<Map<String, dynamic>> data) {
+          // Konversi data JSON dari Supabase ke Model Message
+          final messageList = data.map((json) {
+            // Pastikan model Message Anda memiliki factory fromJson/fromMap
+            // yang bisa menangani format waktu ISO8601 string
+            return Message.fromJson(json);
+          }).toList();
+
           uiState.value = uiState.value.copyWith(messages: messageList);
+
+          // Auto-scroll ke bawah
+          Future.delayed(const Duration(milliseconds: 100), () {
+            if (scrollController.hasClients) {
+              scrollController.jumpTo(
+                scrollController.position.maxScrollExtent,
+              );
+            }
+          });
         });
   }
 
   Future<void> _loadUsersInfo() async {
     try {
-      // 1. Ambil data ride request untuk menemukan ID passenger dan driver
-      final rideRequestDoc = await _db
-          .collection('ride_requests')
-          .doc(rideRequestId)
-          .get();
+      final currentUserId = _supabase.auth.currentUser?.id;
+      if (currentUserId == null) return;
 
-      if (!rideRequestDoc.exists) return;
+      // Ambil data Ride untuk mengetahui siapa driver dan siapa passenger
+      final rideData = await _supabase
+          .from('rides')
+          .select('passenger_id, driver_id')
+          .eq('id', rideId)
+          .single();
 
-      final passengerId = rideRequestDoc.data()?['passengerId'];
-      final driverId = rideRequestDoc.data()?['driverId'];
+      final passengerId = rideData['passenger_id'];
+      final driverId = rideData['driver_id'];
 
+      // Tentukan ID lawan bicara
       final otherUserId = (currentUserId == passengerId)
           ? driverId
           : passengerId;
 
-      // Ambil foto profil user saat ini
-      final currentUserDoc = await _db
-          .collection('users')
-          .doc(currentUserId!)
-          .get();
-      final currentUserPhoto = currentUserDoc.data()?['photoUrl'];
+      // Ambil Foto Profil User Saat Ini
+      final currentUserRes = await _supabase
+          .from('users')
+          .select(
+            'photo_url',
+          ) // Pastikan nama kolom di DB sesuai (misal: photo_url atau profile_image)
+          .eq('id', currentUserId)
+          .maybeSingle();
+
+      final currentUserPhoto = currentUserRes?['photo_url'];
 
       if (otherUserId != null) {
-        // 2. Ambil data user lawan bicara dari koleksi 'users'
-        final otherUserDoc = await _db
-            .collection('users')
-            .doc(otherUserId)
-            .get();
-
-        final otherUserData = otherUserDoc.data();
-        final otherUserName = otherUserData?['nama'] ?? 'User';
-        final otherUserPhoto = otherUserData?['photoUrl'];
+        // Ambil Data Lawan Bicara
+        final otherUserRes = await _supabase
+            .from('users')
+            .select('name, photo_url')
+            .eq('id', otherUserId)
+            .single();
 
         uiState.value = uiState.value.copyWith(
-          otherUserName: otherUserName,
-          otherUserPhotoUrl: otherUserPhoto,
+          otherUserName: otherUserRes['name'] ?? 'User',
+          otherUserPhotoUrl: otherUserRes['photo_url'],
           currentUserPhotoUrl: currentUserPhoto,
         );
       }
     } catch (e) {
       print('Error loading users info: $e');
-      uiState.value = uiState.value.copyWith(otherUserName: 'Error');
+      uiState.value = uiState.value.copyWith(
+        otherUserName: 'Info tidak tersedia',
+      );
     }
   }
 
@@ -133,36 +154,35 @@ class ChatController extends GetxController {
   }
 
   Future<void> sendMessage() async {
-    final textToSend = uiState.value.messageText.trim();
-    if (textToSend.isEmpty || currentUserId == null) return;
+    final textToSend = messageController.text.trim();
+    if (textToSend.isEmpty) return;
+
+    final currentUserId = _supabase.auth.currentUser?.id;
+    if (currentUserId == null) return;
+
+    // Bersihkan input segera agar UI responsif
+    messageController.clear();
+    uiState.value = uiState.value.copyWith(messageText: '');
 
     try {
-      final message = {
-        'text': textToSend,
-        'senderId': currentUserId,
-        'timestamp': FieldValue.serverTimestamp(),
+      await _supabase.from('messages').insert({
+        'ride_id': rideId,
+        'sender_id': currentUserId,
+        'content': textToSend,
         'type': 'text',
-      };
-
-      await _db
-          .collection('chats')
-          .doc(rideRequestId)
-          .collection('messages')
-          .add(message);
-
-      uiState.value = uiState.value.copyWith(messageText: '');
+        // 'created_at': akan diisi otomatis oleh default value DB
+      });
     } catch (e) {
       print('Error sending message: $e');
+      Get.snackbar('Error', 'Gagal mengirim pesan');
     }
   }
 
   Future<void> pickAndSendImage() async {
-    if (currentUserId == null) return;
-
     try {
       final XFile? image = await _imagePicker.pickImage(
         source: ImageSource.gallery,
-        imageQuality: 80,
+        imageQuality: 70, // Kompres sedikit agar upload lebih cepat
       );
 
       if (image != null) {
@@ -174,40 +194,43 @@ class ChatController extends GetxController {
   }
 
   Future<void> _sendImage(File imageFile) async {
+    final currentUserId = _supabase.auth.currentUser?.id;
     if (currentUserId == null) return;
 
     uiState.value = uiState.value.copyWith(isUploading: true);
 
     try {
-      // 1. Buat path unik untuk file di Storage
-      final fileName = '${DateTime.now().millisecondsSinceEpoch}.jpg';
-      final storageRef = _storage.ref().child(
-        'chats/$rideRequestId/$currentUserId/$fileName',
-      );
+      // Buat nama file unik
+      final fileExt = imageFile.path.split('.').last;
+      final fileName =
+          '$rideId/${DateTime.now().millisecondsSinceEpoch}.$fileExt';
 
-      // 2. Upload file
-      await storageRef.putFile(imageFile);
+      // 1. Upload ke Supabase Storage (Bucket: 'chat-attachments')
+      // Pastikan Anda sudah membuat bucket ini di dashboard Supabase dan set ke Public
+      await _supabase.storage
+          .from('chat-attachments')
+          .upload(
+            fileName,
+            imageFile,
+            fileOptions: const FileOptions(upsert: true),
+          );
 
-      // 3. Dapatkan URL download
-      final downloadUrl = await storageRef.getDownloadURL();
+      // 2. Dapatkan URL Public
+      final imageUrl = _supabase.storage
+          .from('chat-attachments')
+          .getPublicUrl(fileName);
 
-      // 4. Simpan pesan tipe gambar ke Firestore
-      final message = {
+      // 3. Simpan Pesan Gambar ke Database
+      await _supabase.from('messages').insert({
+        'ride_id': rideId,
+        'sender_id': currentUserId,
+        'content': '', // Kosong untuk gambar, atau bisa isi deskripsi
+        'image_url': imageUrl,
         'type': 'image',
-        'imageUrl': downloadUrl,
-        'senderId': currentUserId,
-        'timestamp': FieldValue.serverTimestamp(),
-        'text': '', // Empty text for image messages
-      };
-
-      await _db
-          .collection('chats')
-          .doc(rideRequestId)
-          .collection('messages')
-          .add(message);
+      });
     } catch (e) {
       print('Error sending image: $e');
-      Get.snackbar('Error', 'Gagal mengirim gambar');
+      Get.snackbar('Error', 'Gagal mengirim gambar: $e');
     } finally {
       uiState.value = uiState.value.copyWith(isUploading: false);
     }

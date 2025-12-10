@@ -1,22 +1,21 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
-// import 'package:firebase_core/firebase_core.dart';
-// import 'firebase_options.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 import 'app/routes/app_pages.dart';
-// import 'app/data/services/auth_service.dart';  // Disabled for preview
-// import 'app/data/services/ride_service.dart';  // Disabled for preview
+import 'app/data/services/auth_service.dart';
+import 'app/data/services/ride_service.dart';
 import 'app/controllers/preview_controller.dart';
 import 'utils/app_colors.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
-  // TODO: Initialize Firebase when ready
-  // await Firebase.initializeApp(
-  //   options: DefaultFirebaseOptions.currentPlatform,
-  // );
+  await Supabase.initialize(
+    url: 'https://eabxqqzeuxokyfgtrnku.supabase.co',
+    anonKey:
+        'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVhYnhxcXpldXhva3lmZ3Rybmt1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjUwOTQwOTIsImV4cCI6MjA4MDY3MDA5Mn0.2QtFdfSvBg1vdSbl-GQVfEifcx289neyL7jpqpoyoR8',
+  );
 
-  // Initialize preview services
   await initPreviewServices();
 
   runApp(const MyApp());
@@ -26,10 +25,8 @@ Future<void> initPreviewServices() async {
   // Initialize preview controller
   Get.put(PreviewNavigationController());
 
-  /* Original services - uncomment for production
   Get.put(AuthService());
   Get.put(RideService());
-  */
 }
 
 class MyApp extends StatelessWidget {
