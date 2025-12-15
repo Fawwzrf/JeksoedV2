@@ -139,21 +139,23 @@ class RegisterDriverController extends GetxController {
         'password': passwordController.text,
       };
 
-      // Persiapkan Data Driver
+      // Persiapkan Data Driver dengan file path yang benar
       final driverData = {
         'licenseNumber': driverLicenseController.text,
         'vehiclePlate': vehiclePlateController.text,
-        'vehicleType': 'motor',
-        'ktp_path': null,
-        'sim_path': null,
-        'vehicle_path': null,
+        'vehicleType': 'motor', // Bisa diambil dari UI jika ada dropdown
+        // Gunakan variable yang sudah di-set saat pick image
+        'ktp_path': stnkPath.value.isNotEmpty
+            ? stnkPath.value
+            : null, // Menggunakan STNK sbg placeholder KTP jika form KTP belum ada di UI
+        'sim_path': simPath.value.isNotEmpty ? simPath.value : null,
+        'vehicle_path': vehiclePath.value.isNotEmpty ? vehiclePath.value : null,
       };
 
       // Panggil AuthService
       final success = await AuthService.to.registerDriver(userData, driverData);
 
       if (success) {
-        // Redirect ke login atau halaman menunggu verifikasi
         Get.offAllNamed(Routes.login);
       }
     } catch (e) {

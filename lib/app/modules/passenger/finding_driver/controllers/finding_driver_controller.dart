@@ -2,7 +2,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
-import '../../../../data/models/ride_request.dart';
+import '../../../../../data/models/ride_request.dart';
 
 class FindingDriverController extends GetxController {
   final SupabaseClient _supabase = Supabase.instance.client;
@@ -66,7 +66,7 @@ class FindingDriverController extends GetxController {
 
             // Update info UI dari data DB
             pickupAddress.value = ride.pickupAddress ?? '';
-            destinationAddress.value = ride.destAddress ?? '';
+            destinationAddress.value = ride.destinationAddress ?? '';
             estimatedPrice.value = 'Rp ${ride.fare}';
 
             // Cek Status
