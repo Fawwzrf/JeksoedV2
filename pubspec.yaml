@@ -36,10 +36,11 @@ dependencies:
   supabase_flutter: ^2.6.0
   google_maps_flutter: ^2.14.0
   geolocator: ^14.0.2
-  image_picker: ^1.1.2  intl: ^0.20.1
+  image_picker: ^1.1.2
+  intl: ^0.20.1
   google_polyline_algorithm: ^3.1.0
   cached_network_image: ^3.4.1
-  flutter_svg: ^2.0.10
+  flutter_svg: ^2.2.3
   geocoding: ^4.0.0
 
 dev_dependencies:
@@ -61,7 +62,7 @@ flutter:
   # The following line ensures that the Material Icons font is
   # included with your application, so that you can use the icons in
   # the material Icons class.
-  uses-material-design: true 
+  uses-material-design: true
 
   # To add assets to your application, add an assets section, like this:
   assets:

@@ -4,6 +4,7 @@ import '../controllers/cta_controller.dart';
 import '../../../../../utils/app_colors.dart';
 import '../../../../widget/primary_button.dart';
 import 'package:flutter_svg/flutter_svg.dart';
+
 class CtaPage {
   final String title;
   final String description;
@@ -23,7 +24,7 @@ class CtaView extends GetView<CtaController> {
   Widget build(BuildContext context) {
     final ctrl = Get.find<CtaController>();
     print('CtaView build - controller: $ctrl');
-    
+
     final pages = [
       CtaPage(
         title: "Selamat datang di JEKSOED!",
@@ -47,7 +48,8 @@ class CtaView extends GetView<CtaController> {
       body: SafeArea(
         child: Padding(
           padding: const EdgeInsets.all(16.0),
-          child: Column(            children: [
+          child: Column(
+            children: [
               Row(
                 children: [
                   SvgPicture.asset(
@@ -72,7 +74,8 @@ class CtaView extends GetView<CtaController> {
                 width: double.infinity,
                 height: 250,
                 fit: BoxFit.contain,
-              ),              const SizedBox(height: 32),
+              ),
+              const SizedBox(height: 32),
 
               Expanded(
                 child: Column(
@@ -85,7 +88,9 @@ class CtaView extends GetView<CtaController> {
                         physics: const BouncingScrollPhysics(),
                         itemBuilder: (context, index) {
                           return Padding(
-                            padding: const EdgeInsets.symmetric(horizontal: 24.0),
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 24.0,
+                            ),
                             child: Column(
                               mainAxisAlignment: MainAxisAlignment.center,
                               children: [
@@ -120,7 +125,8 @@ class CtaView extends GetView<CtaController> {
                           );
                         },
                       ),
-                    ),                    const SizedBox(height: 16),
+                    ),
+                    const SizedBox(height: 16),
                     Obx(
                       () => Row(
                         mainAxisAlignment: MainAxisAlignment.center,
@@ -136,7 +142,9 @@ class CtaView extends GetView<CtaController> {
                             },
                             child: AnimatedContainer(
                               duration: const Duration(milliseconds: 300),
-                              width: controller.currentPage.value == index ? 24 : 8,
+                              width: controller.currentPage.value == index
+                                  ? 24
+                                  : 8,
                               height: 8,
                               margin: const EdgeInsets.symmetric(horizontal: 4),
                               decoration: BoxDecoration(
@@ -149,7 +157,8 @@ class CtaView extends GetView<CtaController> {
                           ),
                         ),
                       ),
-                    ),const Spacer(),
+                    ),
+                    const Spacer(),
 
                     Column(
                       children: [
