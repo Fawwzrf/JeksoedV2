@@ -4,6 +4,6 @@ import '../controllers/cta_controller.dart';
 class CtaBinding extends Bindings {
   @override
   void dependencies() {
-    Get.lazyPut<CtaController>(() => CtaController());
+    Get.put<CtaController>(CtaController());
   }
 }

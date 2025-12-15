@@ -47,7 +47,7 @@ class RoleSelectionView extends GetView<RoleSelectionController> {
                           "Penumpang aja",
                           style: TextStyle(
                             fontWeight: FontWeight.w600,
-                            fontSize: 16,
+                            fontSize: 18,
                           ),
                         ),
                       ],
@@ -71,7 +71,7 @@ class RoleSelectionView extends GetView<RoleSelectionController> {
                           "Driver!",
                           style: TextStyle(
                             fontWeight: FontWeight.w600,
-                            fontSize: 16,
+                            fontSize: 18,
                           ),
                         ),
                       ],

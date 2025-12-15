@@ -13,6 +13,9 @@ class RegisterDriverController extends GetxController {
   final passwordController = TextEditingController();
   final confirmPasswordController = TextEditingController();
 
+  // Form Key untuk validasi
+  final formKeyStep1 = GlobalKey<FormState>();
+
   // Profile Image Handling
   final RxString profileImagePath = ''.obs;
   final RxString simPath = ''.obs;
@@ -91,25 +94,17 @@ class RegisterDriverController extends GetxController {
     if (currentStep.value > 0) {
       currentStep.value--;
     }
-  }
-
-  void submitStep1() {
-    if (nameController.text.isEmpty ||
-        nimController.text.isEmpty ||
-        emailController.text.isEmpty ||
-        phoneController.text.isEmpty ||
-        passwordController.text.isEmpty ||
-        confirmPasswordController.text.isEmpty) {
-      Get.snackbar("Error", "Semua field harus diisi!");
-      return;
+  }  void submitStep1() {
+    // Validasi menggunakan Form
+    if (formKeyStep1.currentState?.validate() ?? false) {
+      nextStep();
+    } else {
+      Get.snackbar(
+        "Error", 
+        "Mohon perbaiki kesalahan pada form!",
+        snackPosition: SnackPosition.BOTTOM,
+      );
     }
-
-    if (passwordController.text != confirmPasswordController.text) {
-      Get.snackbar("Error", "Password tidak cocok!");
-      return;
-    }
-
-    nextStep();
   }
 
   void submitStep2() {

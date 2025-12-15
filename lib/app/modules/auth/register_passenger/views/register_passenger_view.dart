@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import 'package:jeksoedv2/utils/app_colors.dart';
 import '../controllers/register_passenger_controller.dart';
 import '../../../../routes/app_pages.dart';
+import '../../../../widget/primary_button.dart';
 
 class RegisterPassengerView extends GetView<RegisterPassengerController> {
   const RegisterPassengerView({super.key});
@@ -24,11 +26,11 @@ class RegisterPassengerView extends GetView<RegisterPassengerController> {
           children: [
             const Text(
               "Selamat Bergabung!",
-              style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
+              style: TextStyle(fontSize: 32, fontWeight: FontWeight.bold),
             ),
             const Text(
               "Daftar dulu, Kak!",
-              style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
+              style: TextStyle(fontSize: 32, fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 32),
 
@@ -40,9 +42,7 @@ class RegisterPassengerView extends GetView<RegisterPassengerController> {
               "Nomor Hp",
               "Masukan nomor hp kamu",
               isNumber: true,
-            ),
-
-            Obx(
+            ),            Obx(
               () => TextField(
                 controller: controller.passwordC,
                 obscureText: !controller.isPasswordVisible.value,
@@ -50,7 +50,15 @@ class RegisterPassengerView extends GetView<RegisterPassengerController> {
                   labelText: "Password",
                   hintText: "Masukan password kamu",
                   border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(32),
+                    borderRadius: BorderRadius.circular(25),
+                  ),
+                  enabledBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(25),
+                    borderSide: BorderSide(color: Colors.grey.shade300),
+                  ),
+                  focusedBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(25),
+                    borderSide: const BorderSide(color: Color(0xFFFFC107), width: 2),
                   ),
                   suffixIcon: IconButton(
                     icon: Icon(
@@ -62,37 +70,41 @@ class RegisterPassengerView extends GetView<RegisterPassengerController> {
                   ),
                 ),
               ),
-            ),
-
-            const SizedBox(height: 32),
+            ),            const SizedBox(height: 32),
 
             Obx(
               () => controller.isLoading.value
                   ? const Center(child: CircularProgressIndicator())
-                  : SizedBox(
-                      width: double.infinity,
-                      height: 50,
-                      child: ElevatedButton(
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: const Color(0xFFFFC107),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(32),
-                          ),
-                        ),
-                        onPressed: controller.register,
-                        child: const Text(
-                          "Daftar",
-                          style: TextStyle(color: Colors.black),
-                        ),
-                      ),
+                  : PrimaryButton(
+                      text: "Daftar",
+                      onPressed: controller.register,
+                      containerColor: const Color(0xFFFFC107),
+                      contentColor: Colors.black,
                     ),
             ),
 
             const SizedBox(height: 16),
             Center(
-              child: TextButton(
-                onPressed: () => Get.toNamed(Routes.login),
-                child: const Text("Udah ada akun? Masuk"),
+              child: GestureDetector(
+                onTap: () => Get.toNamed(Routes.login),
+                child: RichText(
+                  text: TextSpan(
+                    style: const TextStyle(
+                      color: Colors.grey,
+                      fontSize: 14,
+                    ),
+                    children: [
+                      const TextSpan(text: "Udah ada akun? "),
+                      TextSpan(
+                        text: "Masuk",
+                        style: TextStyle(
+                          color: AppColors.accentDark,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
               ),
             ),
           ],
@@ -100,7 +112,6 @@ class RegisterPassengerView extends GetView<RegisterPassengerController> {
       ),
     );
   }
-
   Widget _buildTextField(
     TextEditingController c,
     String label,
@@ -115,7 +126,17 @@ class RegisterPassengerView extends GetView<RegisterPassengerController> {
         decoration: InputDecoration(
           labelText: label,
           hintText: hint,
-          border: OutlineInputBorder(borderRadius: BorderRadius.circular(32)),
+          border: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(25),
+          ),
+          enabledBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(25),
+            borderSide: BorderSide(color: Colors.grey.shade300),
+          ),
+          focusedBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(25),
+            borderSide: const BorderSide(color: Color(0xFFFFC107), width: 2),
+          ),
         ),
       ),
     );
