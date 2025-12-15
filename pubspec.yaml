@@ -36,11 +36,11 @@ dependencies:
   supabase_flutter: ^2.6.0
   google_maps_flutter: ^2.14.0
   geolocator: ^14.0.2
-  image_picker: ^1.1.2
-  intl: ^0.20.1
+  image_picker: ^1.1.2  intl: ^0.20.1
   google_polyline_algorithm: ^3.1.0
   cached_network_image: ^3.4.1
   flutter_svg: ^2.0.10
+  geocoding: ^4.0.0
 
 dev_dependencies:
   flutter_test:

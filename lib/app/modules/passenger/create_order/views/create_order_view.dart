@@ -989,18 +989,12 @@ class CreateOrderView extends GetView<CreateOrderController> {
   }
 
   void _showLocationPicker(bool isPickup) {
-    final mockLocations = [
-      'Universitas Jenderal Soedirman',
-      'Terminal Purwokerto',
-      'Alun-alun Purwokerto',
-      'Plaza Asia Purwokerto',
-      'Stasiun Purwokerto',
-      'Rumah Sakit Margono',
-    ];
+    final TextEditingController searchController = TextEditingController();
 
     Get.bottomSheet(
       Container(
-        height: 400,
+        // Sesuaikan tinggi agar keyboard tidak menutupi
+        height: Get.height * 0.8,
         decoration: const BoxDecoration(
           color: Colors.white,
           borderRadius: BorderRadius.only(
@@ -1020,8 +1014,8 @@ class CreateOrderView extends GetView<CreateOrderController> {
                   Expanded(
                     child: Text(
                       isPickup
-                          ? 'Pilih Lokasi Penjemputan'
-                          : 'Pilih Lokasi Tujuan',
+                          ? 'Cari Lokasi Penjemputan'
+                          : 'Cari Lokasi Tujuan',
                       style: const TextStyle(
                         fontSize: 18,
                         fontWeight: FontWeight.w600,
@@ -1036,40 +1030,81 @@ class CreateOrderView extends GetView<CreateOrderController> {
                 ],
               ),
             ),
-            Expanded(
-              child: ListView.builder(
-                itemCount: mockLocations.length,
-                itemBuilder: (context, index) {
-                  return ListTile(
-                    leading: const Icon(
-                      Icons.location_on,
-                      color: AppColors.primary,
-                    ),
-                    title: Text(
-                      mockLocations[index],
-                      style: const TextStyle(
-                        fontSize: 16,
-                        color: AppColors.textPrimary,
-                      ),
-                    ),
-                    onTap: () {
-                      if (isPickup) {
-                        // Dummy lat/lng for now
-                        controller.setPickupLocation(
-                          mockLocations[index],
-                          controller.pickupLatLng!,
-                        );
-                      } else {
-                        // Dummy lat/lng for now
-                        controller.setDestinationLocation(
-                          mockLocations[index],
-                          controller.destLatLng!,
-                        );
-                      }
-                      Get.back();
+
+            // --- KOLOM PENCARIAN BARU ---
+            Padding(
+              padding: const EdgeInsets.all(16.0),
+              child: TextField(
+                controller: searchController,
+                textInputAction: TextInputAction.search,
+                autofocus: true, // Langsung fokus agar keyboard muncul
+                decoration: InputDecoration(
+                  hintText: "Ketik nama tempat (contoh: Unsoed)",
+                  prefixIcon: const Icon(Icons.search),
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  suffixIcon: IconButton(
+                    icon: const Icon(Icons.arrow_forward),
+                    onPressed: () {
+                      // Panggil fungsi pencarian di controller saat tombol panah ditekan
+                      controller.searchLocationFromText(
+                        searchController.text,
+                        isPickup,
+                      );
                     },
-                  );
+                  ),
+                ),
+                onSubmitted: (value) {
+                  // Panggil fungsi pencarian di controller saat tekan Enter/Search di keyboard
+                  controller.searchLocationFromText(value, isPickup);
                 },
+              ),
+            ),
+            // -----------------------------
+
+            // Loading Indicator saat mencari
+            Obx(
+              () => controller.isLoading.value
+                  ? const LinearProgressIndicator(color: AppColors.primary)
+                  : const SizedBox.shrink(),
+            ),
+
+            Expanded(
+              child: ListView(
+                padding: const EdgeInsets.symmetric(horizontal: 16),
+                children: [
+                  const Padding(
+                    padding: EdgeInsets.symmetric(vertical: 8.0),
+                    child: Text(
+                      "Saran Cepat:",
+                      style: TextStyle(color: Colors.grey),
+                    ),
+                  ),
+                  // Mock locations tetap ada sebagai opsi cepat
+                  ...[
+                    'Universitas Jenderal Soedirman',
+                    'Terminal Purwokerto',
+                    'Alun-alun Purwokerto',
+                    'Stasiun Purwokerto',
+                    'RITA SuperMall Purwokerto',
+                  ].map((locationName) {
+                    return ListTile(
+                      leading: const Icon(
+                        Icons.history,
+                        color: AppColors.textSecondary,
+                      ),
+                      title: Text(locationName),
+                      onTap: () {
+                        // Saat saran diklik, kita juga lakukan pencarian koordinat real-nya
+                        controller.searchLocationFromText(
+                          locationName,
+                          isPickup,
+                        );
+                      },
+                    );
+                  }),
+                ],
               ),
             ),
           ],
