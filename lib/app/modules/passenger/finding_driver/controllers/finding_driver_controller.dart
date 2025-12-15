@@ -1,89 +1,117 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
+import '../../../../data/models/ride_request.dart';
 
 class FindingDriverController extends GetxController {
+  final SupabaseClient _supabase = Supabase.instance.client;
   // Observable variables
   final isSearching = true.obs;
   final searchDuration = 0.obs;
   final estimatedArrival = ''.obs;
   final searchStatus = 'Looking for nearby drivers...'.obs;
 
-  Timer? _searchTimer;
+  // Timers & Subscriptions
   Timer? _durationTimer;
-
-  // Animation controller for the searching indicator
-  final rotationValue = 0.0.obs;
+  final rotationValue = 0.0.obs; // Untuk animasi loading
   Timer? _rotationTimer;
+  StreamSubscription? _rideSubscription;
 
-  // Mock data
-  final pickupAddress = 'Jl. Mayjen Hryono 169, Surabaya'.obs;
-  final destinationAddress = 'Universitas Negeri Surabaya'.obs;
-  final estimatedPrice = 'Rp 15,000'.obs;
-  final driverName = 'Budi Santoso'.obs;
-  final driverRating = '4.8'.obs;
-  final driverTrips = '1,250 trips'.obs;
-  final vehicleInfo = 'Toyota Avanza - L 1234 AB'.obs;
+  // Driver info
+  final driverName = ''.obs;
+  final driverRating = ''.obs;
+  final driverTrips = ''.obs;
+  final vehicleInfo = ''.obs;
+  final pickupAddress = ''.obs;
+  final destinationAddress = ''.obs;
+  final estimatedPrice = ''.obs;
+
+  late String rideRequestId;
 
   @override
   void onInit() {
     super.onInit();
-    _initializeSearch();
+    // Ambil ID dari parameter URL
+    rideRequestId = Get.parameters['rideRequestId'] ?? '';
+
+    if (rideRequestId.isEmpty) {
+      Get.back();
+      Get.snackbar('Error', 'ID Order tidak valid');
+      return;
+    }
+
     _startRotationAnimation();
+    _startDurationCounter();
+    _listenToRideStatus();
   }
 
   @override
   void onClose() {
-    _stopSearch();
+    _stopAllTimers();
     _stopRotationAnimation();
     super.onClose();
   }
 
-  void _initializeSearch() {
-    // Get ride request ID from route parameters or arguments
-    String? rideRequestId = Get.parameters['rideRequestId'];
+  void _listenToRideStatus() {
+    _rideSubscription = _supabase
+        .from('ride_requests')
+        .stream(primaryKey: ['id'])
+        .eq('id', rideRequestId)
+        .listen((List<Map<String, dynamic>> data) async {
+          if (data.isEmpty) return;
 
-    _startDriverSearch();
-    _startDurationCounter();
+          try {
+            final ride = RideRequest.fromJson(data.first);
+
+            // Update info UI dari data DB
+            pickupAddress.value = ride.pickupAddress ?? '';
+            destinationAddress.value = ride.destAddress ?? '';
+            estimatedPrice.value = 'Rp ${ride.fare}';
+
+            // Cek Status
+            if (ride.status == 'accepted' && ride.driverId != null) {
+              isSearching.value = false;
+              _stopRotationAnimation();
+
+              await _fetchDriverInfo(ride.driverId!);
+
+              // Beri waktu user melihat "Driver Found" sebelum pindah
+              Future.delayed(const Duration(seconds: 3), () {
+                Get.offNamed('/trip/$rideRequestId');
+              });
+            } else if (ride.status == 'cancelled') {
+              Get.offAllNamed('/passenger-main');
+              Get.snackbar('Info', 'Order dibatalkan');
+            }
+          } catch (e) {
+            print("Error processing ride update: $e");
+          }
+        });
   }
 
-  void _startDriverSearch() {
-    _searchTimer = Timer.periodic(const Duration(seconds: 3), (timer) {
-      _updateSearchStatus();
+  Future<void> _fetchDriverInfo(String driverId) async {
+    try {
+      final data = await _supabase
+          .from('users')
+          .select()
+          .eq('id', driverId)
+          .single();
 
-      // Simulate finding driver after 10-15 seconds
-      if (searchDuration.value >= 10 && isSearching.value) {
-        _simulateDriverFound();
-      }
-    });
-  }
+      driverName.value = data['name'] ?? data['nama'] ?? 'Driver';
+      final rating = data['total_rating'] ?? 0.0;
+      final count = data['rating_count'] ?? 1;
+      // Hindari pembagian nol
+      final avgRating = count > 0 ? (rating / count).toDouble() : 5.0;
+      driverRating.value = avgRating.toStringAsFixed(1);
+      vehicleInfo.value = data['license_plate'] ?? data['vehicle_plate'] ?? '';
+      driverTrips.value = '${data['completed_trips'] ?? 0} trip';
+      estimatedArrival.value = '5 menit';
 
-  void _updateSearchStatus() {
-    final duration = searchDuration.value;
-
-    if (duration < 5) {
-      searchStatus.value = 'Looking for nearby drivers...';
-    } else if (duration < 10) {
-      searchStatus.value = 'Expanding search area...';
-    } else if (duration < 15) {
-      searchStatus.value = 'Almost there, finding the best driver...';
-    } else {
-      searchStatus.value = 'This is taking longer than usual...';
+      searchStatus.value = 'Driver ditemukan!';
+    } catch (e) {
+      print('Error fetching driver info: $e');
     }
-  }
-
-  void _simulateDriverFound() {
-    isSearching.value = false;
-    searchStatus.value = 'Driver found!';
-    estimatedArrival.value = '3 minutes';
-
-    _stopSearch();
-
-    // Auto navigate to trip screen after 3 seconds
-    Timer(const Duration(seconds: 3), () {
-      // TODO: Navigate to trip screen
-      Get.offAllNamed('/home-passenger');
-    });
   }
 
   void _startDurationCounter() {
@@ -98,11 +126,9 @@ class FindingDriverController extends GetxController {
     });
   }
 
-  void _stopSearch() {
-    _searchTimer?.cancel();
+  void _stopAllTimers() {
     _durationTimer?.cancel();
-    _searchTimer = null;
-    _durationTimer = null;
+    _rotationTimer?.cancel();
   }
 
   void _stopRotationAnimation() {
@@ -110,41 +136,23 @@ class FindingDriverController extends GetxController {
     _rotationTimer = null;
   }
 
-  void _showError(String message) {
-    Get.snackbar(
-      'Error',
-      message,
-      backgroundColor: Colors.red,
-      colorText: Colors.white,
-    );
-  }
-
-  void _showSuccess(String message) {
-    Get.snackbar(
-      'Success',
-      message,
-      backgroundColor: Colors.green,
-      colorText: Colors.white,
-    );
-  }
-
   // User actions
   void cancelSearch() {
     Get.dialog(
       AlertDialog(
-        title: const Text('Cancel Ride'),
+        title: const Text('Batalkan Pesanan?'),
         content: const Text(
-          'Are you sure you want to cancel this ride request?',
+          'Apakah Anda yakin ingin membatalkan pencarian driver?',
         ),
         actions: [
-          TextButton(onPressed: () => Get.back(), child: const Text('No')),
+          TextButton(onPressed: () => Get.back(), child: const Text('Tidak')),
           TextButton(
-            onPressed: () {
-              _cancelRideRequest();
-              Get.back();
+            onPressed: () async {
+              Get.back(); // Tutup dialog dulu
+              await _cancelRideRequestInBackend();
             },
             child: const Text(
-              'Yes, Cancel',
+              'Ya, Batalkan',
               style: TextStyle(color: Colors.red),
             ),
           ),
@@ -153,13 +161,15 @@ class FindingDriverController extends GetxController {
     );
   }
 
-  void _cancelRideRequest() {
-    // TODO: Cancel ride request in the backend
-    _stopSearch();
-    _stopRotationAnimation();
-
-    _showSuccess('Ride cancelled successfully');
-    Get.back();
+  Future<void> _cancelRideRequestInBackend() async {
+    try {
+      await _supabase
+          .from('ride_requests')
+          .update({'status': 'cancelled'})
+          .eq('id', rideRequestId);
+    } catch (e) {
+      Get.snackbar('Error', 'Gagal membatalkan pesanan: $e');
+    }
   }
 
   // Helper methods

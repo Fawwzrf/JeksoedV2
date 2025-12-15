@@ -195,7 +195,7 @@ class HomePassengerView extends GetView<HomePassengerController> {
           () => RecentHistoryList(
             history: controller.recentTrips
                 .map(
-                  (trip) => RideRequest(
+                  (trip) => RideHistoryItem(
                     destinationName: trip['destination'],
                     destinationAddress: trip['address'],
                   ),

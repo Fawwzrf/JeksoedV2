@@ -98,11 +98,13 @@ class FindingDriverView extends GetView<FindingDriverController> {
                   ),
                 ],
               ),
-              child: Obx(
-                () => controller.isSearching.value
-                    ? _buildSearchingContent()
-                    : _buildDriverFoundContent(),
-              ),
+              child: Obx(() {
+                if (controller.isSearching.value) {
+                  return _buildSearchingContent();
+                } else {
+                  return _buildDriverFoundContent();
+                }
+              }),
             ),
           ),
         ],

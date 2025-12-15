@@ -100,7 +100,7 @@ class RatingScreenUI extends StatelessWidget {
               ),
               const SizedBox(height: 8),
               Text(
-                uiState.driver?.nama ?? 'Driver',
+                uiState.driver?.name ?? 'Driver',
                 style: const TextStyle(
                   fontSize: 18,
                   fontWeight: FontWeight.bold,

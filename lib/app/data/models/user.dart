@@ -4,7 +4,7 @@ class User {
   final String email;
   final String phone;
   final UserType userType;
-  final String? profileImageUrl;
+  final String? photoUrl;
   final DateTime createdAt;
   final DateTime updatedAt;
   final bool isActive;
@@ -16,7 +16,7 @@ class User {
     required this.email,
     required this.phone,
     required this.userType,
-    this.profileImageUrl,
+    this.photoUrl,
     required this.createdAt,
     required this.updatedAt,
     this.isActive = true,
@@ -33,7 +33,7 @@ class User {
         (type) => type.name == json['user_type'],
         orElse: () => UserType.passenger,
       ),
-      profileImageUrl: json['profile_image_url'],
+      photoUrl: json['profile_url'],
       createdAt: DateTime.parse(
         json['created_at'] ?? DateTime.now().toIso8601String(),
       ),
@@ -52,7 +52,7 @@ class User {
       'email': email,
       'phone': phone,
       'user_type': userType.name,
-      'profile_image_url': profileImageUrl,
+      'profile_url': photoUrl,
       'created_at': createdAt.toIso8601String(),
       'updated_at': updatedAt.toIso8601String(),
       'is_active': isActive,
@@ -66,7 +66,7 @@ class User {
     String? email,
     String? phone,
     UserType? userType,
-    String? profileImageUrl,
+    String? photoUrl,
     DateTime? createdAt,
     DateTime? updatedAt,
     bool? isActive,
@@ -78,7 +78,7 @@ class User {
       email: email ?? this.email,
       phone: phone ?? this.phone,
       userType: userType ?? this.userType,
-      profileImageUrl: profileImageUrl ?? this.profileImageUrl,
+      photoUrl: photoUrl ?? this.photoUrl,
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
       isActive: isActive ?? this.isActive,

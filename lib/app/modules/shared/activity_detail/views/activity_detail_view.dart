@@ -294,7 +294,7 @@ class _UserInfoRow extends StatelessWidget {
         const SizedBox(width: 12),
         Expanded(
           child: Text(
-            user?.nama ?? 'Pengguna',
+            user?.name ?? 'Pengguna',
             style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
           ),
         ),
@@ -340,7 +340,7 @@ class _DriverInfoRow extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
-                driver?.nama ?? 'Driver',
+                driver?.name ?? 'Driver',
                 style: const TextStyle(
                   fontSize: 16,
                   fontWeight: FontWeight.bold,

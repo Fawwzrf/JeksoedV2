@@ -2,6 +2,7 @@
 
 import 'package:get/get.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:intl/intl.dart';
 
 class ProfileUiState {
   final String name;
@@ -10,7 +11,11 @@ class ProfileUiState {
   final bool isLoading;
   final bool showLogoutDialog;
   final bool showDeleteDialog;
-  final String? role;
+  final String? userType;
+
+  final String rating;
+  final String totalTrips;
+  final String joinDate;
 
   ProfileUiState({
     this.name = 'Memuat...',
@@ -19,7 +24,10 @@ class ProfileUiState {
     this.isLoading = true,
     this.showLogoutDialog = false,
     this.showDeleteDialog = false,
-    this.role,
+    this.userType,
+    this.rating = '0.0',
+    this.totalTrips = '0',
+    this.joinDate = '-',
   });
 
   ProfileUiState copyWith({
@@ -29,7 +37,10 @@ class ProfileUiState {
     bool? isLoading,
     bool? showLogoutDialog,
     bool? showDeleteDialog,
-    String? role,
+    String? userType,
+    String? rating,
+    String? totalTrips,
+    String? joinDate,
   }) {
     return ProfileUiState(
       name: name ?? this.name,
@@ -38,7 +49,10 @@ class ProfileUiState {
       isLoading: isLoading ?? this.isLoading,
       showLogoutDialog: showLogoutDialog ?? this.showLogoutDialog,
       showDeleteDialog: showDeleteDialog ?? this.showDeleteDialog,
-      role: role ?? this.role,
+      userType: userType ?? this.userType,
+      rating: rating ?? this.rating,
+      totalTrips: totalTrips ?? this.totalTrips,
+      joinDate: joinDate ?? this.joinDate,
     );
   }
 }
@@ -64,11 +78,26 @@ class ProfileController extends GetxController {
             .maybeSingle();
 
         if (data != null) {
+          // Hitung Rating
+          final totalRating = (data['total_rating'] ?? 0).toDouble();
+          final ratingCount = (data['rating_count'] ?? 0).toInt();
+          final avgRating = ratingCount > 0 ? totalRating / ratingCount : 5.0;
+
+          // Format Tanggal Gabung (ambil tahun saja)
+          String joinedYear = '-';
+          if (data['created_at'] != null) {
+            final date = DateTime.parse(data['created_at']);
+            joinedYear = DateFormat('yyyy').format(date);
+          }
+
           uiState.value = uiState.value.copyWith(
-            name: data['nama'] ?? data['name'] ?? 'Nama tidak ditemukan',
+            name: data['name'] ?? 'Nama tidak ditemukan',
             email: user.email ?? 'Email tidak ditemukan',
             photoUrl: data['photoUrl'] ?? data['photo_url'] ?? '',
-            role: data['role'] ?? data['user_type'] ?? 'passenger',
+            userType: data['userType'] ?? data['user_type'] ?? 'passenger',
+            rating: avgRating.toStringAsFixed(1),
+            totalTrips: (data['completed_trips'] ?? 0).toString(),
+            joinDate: joinedYear,
             isLoading: false,
           );
         } else {

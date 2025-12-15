@@ -2,6 +2,7 @@
 
 import 'dart:async';
 import 'package:get/get.dart';
+import 'package:jeksoedv2/app/data/models/user.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../../../../data/models/ride_request.dart';
 
@@ -77,21 +78,21 @@ class ActivityController extends GetxController {
     try {
       final userDoc = await _supabase
           .from("users")
-          .select('role')
+          .select('user_type')
           .eq('id', currentUserId!)
           .single();
-      final role = userDoc['role'] as String?;
-      await fetchHistory(role);
+      final userType = userDoc['user_type'] as String?;
+      await fetchHistory(userType);
     } catch (e) {
       print('Error fetching user role: $e');
       uiState.value = uiState.value.copyWith(isLoading: false);
     }
   }
 
-  Future<void> fetchHistory(String? role) async {
-    if (role == null || currentUserId == null) return;
+  Future<void> fetchHistory(String? userType) async {
+    if (userType == null || currentUserId == null) return;
 
-    final isDriver = role == "driver";
+    final isDriver = userType == "driver";
     uiState.value = uiState.value.copyWith(isDriver: isDriver);
 
     final fieldToQuery = isDriver
@@ -121,8 +122,7 @@ class ActivityController extends GetxController {
               final historyItems = <RideHistoryDisplay>[];
 
               for (final rideData in filteredData) {
-                final ride = RideRequest.fromJson(rideData); // Gunakan fromJson
-
+                final ride = RideRequest.fromJson(rideData);
                 final otherUserId = isDriver ? ride.passengerId : ride.driverId;
 
                 String otherUserName = 'User';
@@ -131,15 +131,13 @@ class ActivityController extends GetxController {
                 if (otherUserId != null) {
                   final userData = await _supabase
                       .from("users")
-                      .select("nama, photo_url")
+                      .select("name, photo_url")
                       .eq("id", otherUserId)
                       .maybeSingle();
 
                   if (userData != null) {
-                    otherUserName =
-                        userData['nama'] ?? userData['name'] ?? 'User';
-                    otherUserPhoto =
-                        userData['photo_url'] ?? userData['photoUrl'];
+                    otherUserName = userData['name'] ?? 'User';
+                    otherUserPhoto = userData['photo_url'];
                   }
                 }
 

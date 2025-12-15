@@ -2,15 +2,15 @@ import 'package:flutter/material.dart';
 import '../../../../../utils/app_colors.dart';
 
 // Model untuk data RideRequest (sesuai dengan yang ada di Android)
-class RideRequest {
+class RideHistoryItem {
   final String? destinationName;
   final String? destinationAddress;
 
-  RideRequest({this.destinationName, this.destinationAddress});
+  RideHistoryItem({this.destinationName, this.destinationAddress});
 }
 
 class RecentHistoryList extends StatelessWidget {
-  final List<RideRequest> history;
+  final List<RideHistoryItem> history;
 
   const RecentHistoryList({super.key, required this.history});
 
@@ -35,7 +35,7 @@ class RecentHistoryList extends StatelessWidget {
 }
 
 class HistoryRowItem extends StatelessWidget {
-  final RideRequest item;
+  final RideHistoryItem item;
 
   const HistoryRowItem({super.key, required this.item});
 

@@ -155,30 +155,27 @@ class DriverHomeController extends GetxController {
 
     // Realtime subscription to user's row; fallback to one-time fetch if realtime not needed
     _profileStream = _supabase
-        .from('users:id=eq.$userId')
+        .from('users')
         .stream(primaryKey: ['id'])
+        .eq('id', userId)
         .listen(
-          (List<Map<String, dynamic>> data) async {
+          (List<Map<String, dynamic>> data) {
             try {
               if (data.isNotEmpty) {
                 final row = data.first;
-                final totalRating =
-                    (row['totalRating'] ?? row['total_rating'] ?? 0).toDouble();
-                final ratingCount =
-                    (row['ratingCount'] ?? row['rating_count'] ?? 0).toInt();
+                final totalRating = (row['total_rating'] ?? 0).toDouble();
+                final ratingCount = (row['rating_count'] ?? 0).toInt();
                 final averageRating = ratingCount > 0
                     ? totalRating / ratingCount
                     : 0.0;
 
                 driverProfile.value = DriverProfile(
                   name: row['nama'] ?? row['name'] ?? 'Driver',
-                  licensePlate:
-                      row['licensePlate'] ?? row['license_plate'] ?? '',
-                  photoUrl: row['photoUrl'] ?? row['photo_url'],
+                  licensePlate: row['license_number'] ?? '',
+                  photoUrl: row['photo_url'],
                   balance: 'Rp${row['balance'] ?? 0}',
                   rating: averageRating.toStringAsFixed(1),
-                  orderCount:
-                      '${row['completedTrips'] ?? row['completed_trips'] ?? 0}',
+                  orderCount: '${row['completed_trips'] ?? 0}',
                 );
               }
             } catch (e) {

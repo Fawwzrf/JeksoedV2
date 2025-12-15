@@ -1,148 +1,146 @@
-// filepath: lib/app/modules/driver/profile/views/driver_profile_view.dart
-
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
-import 'package:supabase_flutter/supabase_flutter.dart';
+import '../../../shared/profile/controllers/profile_controller.dart'; // Import Shared Controller
 import '../../../../../utils/app_colors.dart';
 
-class DriverProfileView extends StatelessWidget {
+// Ubah menjadi GetView<ProfileController>
+class DriverProfileView extends GetView<ProfileController> {
   const DriverProfileView({super.key});
 
   @override
   Widget build(BuildContext context) {
-    final user = Supabase.instance.client.auth.currentUser;
-
-    final String? userName =
-        user?.userMetadata?['name'] ?? user?.userMetadata?['full_name'];
-    final String? userPhoto =
-        user?.userMetadata?['photo_url'] ?? user?.userMetadata?['avatar_url'];
+    // Refresh data saat halaman dibuka
+    controller.fetchUserData();
 
     return Scaffold(
       backgroundColor: Colors.grey.shade100,
-      body: CustomScrollView(
-        slivers: [
-          // App Bar with Profile Header
-          SliverAppBar(
-            expandedHeight: 200,
-            pinned: true,
-            backgroundColor: AppColors.primaryGreen,
-            automaticallyImplyLeading: false,
-            flexibleSpace: FlexibleSpaceBar(
-              background: Container(
-                decoration: BoxDecoration(
-                  gradient: LinearGradient(
-                    begin: Alignment.topLeft,
-                    end: Alignment.bottomRight,
-                    colors: [
-                      AppColors.primaryGreen,
-                      AppColors.primaryGreen.withOpacity(0.8),
-                    ],
+      body: Obx(() {
+        final state = controller.uiState.value;
+
+        return CustomScrollView(
+          slivers: [
+            // App Bar with Profile Header
+            SliverAppBar(
+              expandedHeight: 200,
+              pinned: true,
+              backgroundColor: AppColors.primaryGreen,
+              automaticallyImplyLeading: false,
+              flexibleSpace: FlexibleSpaceBar(
+                background: Container(
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                      colors: [
+                        AppColors.primaryGreen,
+                        AppColors.primaryGreen.withOpacity(0.8),
+                      ],
+                    ),
                   ),
-                ),
-                child: SafeArea(
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      const SizedBox(height: 20),
-                      // Profile Picture
-                      Container(
-                        width: 80,
-                        height: 80,
-                        decoration: BoxDecoration(
-                          shape: BoxShape.circle,
-                          border: Border.all(color: Colors.white, width: 3),
+                  child: SafeArea(
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        const SizedBox(height: 20),
+                        // Profile Picture
+                        Container(
+                          width: 80,
+                          height: 80,
+                          decoration: BoxDecoration(
+                            shape: BoxShape.circle,
+                            border: Border.all(color: Colors.white, width: 3),
+                          ),
+                          child: ClipOval(
+                            child: state.photoUrl.isNotEmpty
+                                ? Image.network(
+                                    state.photoUrl,
+                                    fit: BoxFit.cover,
+                                    errorBuilder: (_, __, ___) =>
+                                        _buildDefaultAvatar(),
+                                  )
+                                : _buildDefaultAvatar(),
+                          ),
                         ),
-                        child: ClipOval(
-                          child: userPhoto != null
-                              ? Image.network(
-                                  userPhoto,
-                                  fit: BoxFit.cover,
-                                  errorBuilder: (context, error, stackTrace) {
-                                    return _buildDefaultAvatar();
-                                  },
-                                )
-                              : _buildDefaultAvatar(),
+                        const SizedBox(height: 12),
+                        // Name (Real Data)
+                        Text(
+                          state.name,
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 24,
+                            fontWeight: FontWeight.bold,
+                          ),
                         ),
-                      ),
-                      const SizedBox(height: 12),
-                      // Name
-                      Text(
-                        userName ?? 'Driver',
-                        style: const TextStyle(
-                          color: Colors.white,
-                          fontSize: 24,
-                          fontWeight: FontWeight.bold,
+                        const SizedBox(height: 4),
+                        // Email (Real Data)
+                        Text(
+                          state.email,
+                          style: const TextStyle(
+                            color: Colors.white70,
+                            fontSize: 14,
+                          ),
                         ),
-                      ),
-                      const SizedBox(height: 4),
-                      // Email
-                      Text(
-                        user?.email ?? 'No email',
-                        style: const TextStyle(
-                          color: Colors.white70,
-                          fontSize: 14,
-                        ),
-                      ),
-                    ],
+                      ],
+                    ),
                   ),
                 ),
               ),
             ),
-          ),
 
-          // Profile Content
-          SliverToBoxAdapter(
-            child: Padding(
-              padding: const EdgeInsets.all(16),
-              child: Column(
-                children: [
-                  // Stats Cards
-                  Row(
-                    children: [
-                      Expanded(
-                        child: _buildStatCard(
-                          title: 'Rating',
-                          value: '4.8',
-                          icon: Icons.star,
-                          iconColor: Colors.amber,
+            // Profile Content
+            SliverToBoxAdapter(
+              child: Padding(
+                padding: const EdgeInsets.all(16),
+                child: Column(
+                  children: [
+                    // Stats Cards (Real Data)
+                    Row(
+                      children: [
+                        Expanded(
+                          child: _buildStatCard(
+                            title: 'Rating',
+                            value: state.rating, // Data Asli
+                            icon: Icons.star,
+                            iconColor: Colors.amber,
+                          ),
                         ),
-                      ),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: _buildStatCard(
-                          title: 'Trip Selesai',
-                          value: '127',
-                          icon: Icons.check_circle,
-                          iconColor: AppColors.primaryGreen,
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: _buildStatCard(
+                            title: 'Trip Selesai',
+                            value: state.totalTrips, // Data Asli
+                            icon: Icons.check_circle,
+                            iconColor: AppColors.primaryGreen,
+                          ),
                         ),
-                      ),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: _buildStatCard(
-                          title: 'Bergabung',
-                          value: '2023',
-                          icon: Icons.calendar_today,
-                          iconColor: Colors.blue,
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: _buildStatCard(
+                            title: 'Bergabung',
+                            value: state.joinDate, // Data Asli
+                            icon: Icons.calendar_today,
+                            iconColor: Colors.blue,
+                          ),
                         ),
-                      ),
-                    ],
-                  ),
+                      ],
+                    ),
 
-                  const SizedBox(height: 20),
+                    const SizedBox(height: 20),
 
-                  // Menu Items
-                  _buildMenuSection(),
+                    // Menu Items
+                    _buildMenuSection(),
 
-                  const SizedBox(height: 20),
+                    const SizedBox(height: 20),
 
-                  // Logout Button
-                  _buildLogoutButton(),
-                ],
+                    // Logout Button (Using Controller logic)
+                    _buildLogoutButton(),
+                  ],
+                ),
               ),
             ),
-          ),
-        ],
-      ),
+          ],
+        );
+      }),
     );
   }
 
@@ -200,54 +198,21 @@ class DriverProfileView extends StatelessWidget {
             icon: Icons.person,
             title: 'Edit Profil',
             subtitle: 'Ubah informasi profil Anda',
-            onTap: () {
-              // Navigate to edit profile
-            },
-          ),
-          _buildDivider(),
-          _buildMenuItem(
-            icon: Icons.directions_car,
-            title: 'Informasi Kendaraan',
-            subtitle: 'Kelola data kendaraan Anda',
-            onTap: () {
-              // Navigate to vehicle info
-            },
-          ),
-          _buildDivider(),
-          _buildMenuItem(
-            icon: Icons.account_balance_wallet,
-            title: 'Riwayat Saldo',
-            subtitle: 'Lihat riwayat pendapatan',
-            onTap: () {
-              // Navigate to wallet history
-            },
-          ),
-          _buildDivider(),
-          _buildMenuItem(
-            icon: Icons.notifications,
-            title: 'Notifikasi',
-            subtitle: 'Pengaturan notifikasi',
-            onTap: () {
-              // Navigate to notifications
-            },
+            onTap: controller.navigateToEditProfile,
           ),
           _buildDivider(),
           _buildMenuItem(
             icon: Icons.help,
             title: 'Bantuan',
             subtitle: 'FAQ dan dukungan pelanggan',
-            onTap: () {
-              // Navigate to help
-            },
+            onTap: controller.navigateToAbout,
           ),
           _buildDivider(),
           _buildMenuItem(
-            icon: Icons.privacy_tip,
-            title: 'Kebijakan Privasi',
-            subtitle: 'Baca kebijakan privasi kami',
-            onTap: () {
-              // Navigate to privacy policy
-            },
+            icon: Icons.description,
+            title: 'Syarat & Ketentuan',
+            subtitle: 'Baca syarat dan ketentuan',
+            onTap: controller.navigateToTnc,
           ),
         ],
       ),
@@ -325,47 +290,9 @@ class DriverProfileView extends StatelessWidget {
           'Keluar dari akun driver',
           style: TextStyle(fontSize: 12, color: Colors.red),
         ),
-        onTap: () {
-          _showLogoutDialog();
-        },
+        onTap: controller.onLogoutClick, // Gunakan method controller yang ada
         contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
       ),
     );
-  }
-
-  void _showLogoutDialog() {
-    Get.dialog(
-      AlertDialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-        title: const Text('Keluar'),
-        content: const Text('Apakah Anda yakin ingin keluar dari akun?'),
-        actions: [
-          TextButton(
-            onPressed: () => Get.back(),
-            child: Text('Batal', style: TextStyle(color: Colors.grey.shade600)),
-          ),
-          ElevatedButton(
-            onPressed: () {
-              Get.back();
-              _logout();
-            },
-            style: ElevatedButton.styleFrom(
-              backgroundColor: Colors.red,
-              foregroundColor: Colors.white,
-            ),
-            child: const Text('Keluar'),
-          ),
-        ],
-      ),
-    );
-  }
-
-  void _logout() async {
-    try {
-      await Supabase.instance.client.auth.signOut();
-      Get.offAllNamed('/cta');
-    } catch (e) {
-      Get.snackbar('Error', 'Gagal keluar: $e');
-    }
   }
 }

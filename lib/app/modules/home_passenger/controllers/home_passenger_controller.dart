@@ -4,7 +4,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 class HomePassengerController extends GetxController {
   var userName = "Sobat Jeksoed".obs;
   var isLoading = true.obs;
-  var hasNotification = true.obs;
+  var hasNotification = false.obs;
   var recentTrips = <Map<String, String>>[].obs;
 
   final SupabaseClient _supabase = Supabase.instance.client;
@@ -27,12 +27,12 @@ class HomePassengerController extends GetxController {
       // Fetch User Data
       final data = await _supabase
           .from("users")
-          .select("nama")
+          .select("name")
           .eq("id", user.id)
           .maybeSingle();
 
       if (data != null) {
-        String fullName = data['nama'] ?? "Sobat Jeksoed";
+        String fullName = data['name'] ?? "Sobat Jeksoed";
         userName.value = fullName.split(" ").first;
       }
 

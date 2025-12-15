@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import 'dart:io'; // Import dart:io untuk menampilkan preview gambar file
 import '../controllers/register_driver_controller.dart';
 import '../../../../../utils/app_colors.dart';
 
@@ -16,7 +17,13 @@ class RegisterDriverView extends GetView<RegisterDriverController> {
         foregroundColor: Colors.white,
         leading: IconButton(
           icon: const Icon(Icons.arrow_back),
-          onPressed: () => Get.back(),
+          onPressed: () {
+            if (controller.currentStep.value > 0) {
+              controller.previousStep();
+            } else {
+              Get.back();
+            }
+          },
         ),
       ),
       body: Obx(() {
@@ -34,17 +41,15 @@ class RegisterDriverView extends GetView<RegisterDriverController> {
     );
   }
 
+  // --- STEP 1: IDENTITAS ---
   Widget _buildStep1() {
     return Padding(
       padding: const EdgeInsets.all(24.0),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Progress indicator
           _buildProgressIndicator(),
           const SizedBox(height: 32),
-          
-          // Step title
           const Text(
             'Identitas Driver',
             style: TextStyle(
@@ -56,17 +61,46 @@ class RegisterDriverView extends GetView<RegisterDriverController> {
           const SizedBox(height: 8),
           const Text(
             'Lengkapi data pribadi Anda',
-            style: TextStyle(
-              fontSize: 16,
-              color: AppColors.textSecondary,
-            ),
+            style: TextStyle(fontSize: 16, color: AppColors.textSecondary),
           ),
           const SizedBox(height: 32),
-          
           Expanded(
             child: SingleChildScrollView(
               child: Column(
                 children: [
+                  // Profile Picture Upload
+                  Center(
+                    child: GestureDetector(
+                      onTap: controller.pickProfileImage,
+                      child: Obx(
+                        () => Container(
+                          width: 100,
+                          height: 100,
+                          decoration: BoxDecoration(
+                            shape: BoxShape.circle,
+                            color: AppColors.lightBackground,
+                            border: Border.all(color: AppColors.primary),
+                            image: controller.profileImagePath.value.isNotEmpty
+                                ? DecorationImage(
+                                    image: FileImage(
+                                      File(controller.profileImagePath.value),
+                                    ),
+                                    fit: BoxFit.cover,
+                                  )
+                                : null,
+                          ),
+                          child: controller.profileImagePath.value.isEmpty
+                              ? Icon(
+                                  Icons.camera_alt,
+                                  color: AppColors.primary,
+                                  size: 40,
+                                )
+                              : null,
+                        ),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 24),
                   _buildTextField(
                     controller: controller.nameController,
                     label: 'Nama Lengkap',
@@ -93,40 +127,43 @@ class RegisterDriverView extends GetView<RegisterDriverController> {
                     keyboardType: TextInputType.phone,
                   ),
                   const SizedBox(height: 16),
-                  Obx(() => _buildTextField(
-                    controller: controller.passwordController,
-                    label: 'Password',
-                    icon: Icons.lock,
-                    obscureText: !controller.isPasswordVisible.value,
-                    suffixIcon: IconButton(
-                      icon: Icon(
-                        controller.isPasswordVisible.value
-                            ? Icons.visibility_off
-                            : Icons.visibility,
+                  Obx(
+                    () => _buildTextField(
+                      controller: controller.passwordController,
+                      label: 'Password',
+                      icon: Icons.lock,
+                      obscureText: !controller.isPasswordVisible.value,
+                      suffixIcon: IconButton(
+                        icon: Icon(
+                          controller.isPasswordVisible.value
+                              ? Icons.visibility_off
+                              : Icons.visibility,
+                        ),
+                        onPressed: controller.togglePasswordVisibility,
                       ),
-                      onPressed: controller.togglePasswordVisibility,
                     ),
-                  )),
+                  ),
                   const SizedBox(height: 16),
-                  Obx(() => _buildTextField(
-                    controller: controller.confirmPasswordController,
-                    label: 'Konfirmasi Password',
-                    icon: Icons.lock_outline,
-                    obscureText: !controller.isConfirmPasswordVisible.value,
-                    suffixIcon: IconButton(
-                      icon: Icon(
-                        controller.isConfirmPasswordVisible.value
-                            ? Icons.visibility_off
-                            : Icons.visibility,
+                  Obx(
+                    () => _buildTextField(
+                      controller: controller.confirmPasswordController,
+                      label: 'Konfirmasi Password',
+                      icon: Icons.lock_outline,
+                      obscureText: !controller.isConfirmPasswordVisible.value,
+                      suffixIcon: IconButton(
+                        icon: Icon(
+                          controller.isConfirmPasswordVisible.value
+                              ? Icons.visibility_off
+                              : Icons.visibility,
+                        ),
+                        onPressed: controller.toggleConfirmPasswordVisibility,
                       ),
-                      onPressed: controller.toggleConfirmPasswordVisibility,
                     ),
-                  )),
+                  ),
                 ],
               ),
             ),
           ),
-          
           const SizedBox(height: 24),
           _buildNextButton(() => controller.submitStep1()),
         ],
@@ -134,17 +171,15 @@ class RegisterDriverView extends GetView<RegisterDriverController> {
     );
   }
 
+  // --- STEP 2: DOKUMEN ---
   Widget _buildStep2() {
     return Padding(
       padding: const EdgeInsets.all(24.0),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Progress indicator
           _buildProgressIndicator(),
           const SizedBox(height: 32),
-          
-          // Step title
           const Text(
             'Dokumen Kendaraan',
             style: TextStyle(
@@ -156,13 +191,9 @@ class RegisterDriverView extends GetView<RegisterDriverController> {
           const SizedBox(height: 8),
           const Text(
             'Upload dokumen kendaraan yang diperlukan',
-            style: TextStyle(
-              fontSize: 16,
-              color: AppColors.textSecondary,
-            ),
+            style: TextStyle(fontSize: 16, color: AppColors.textSecondary),
           ),
           const SizedBox(height: 32),
-          
           Expanded(
             child: SingleChildScrollView(
               child: Column(
@@ -179,30 +210,41 @@ class RegisterDriverView extends GetView<RegisterDriverController> {
                     icon: Icons.directions_car,
                   ),
                   const SizedBox(height: 32),
-                  
-                  // Document upload placeholders
-                  _buildDocumentCard(
-                    'Foto SIM',
-                    'Upload foto SIM yang masih berlaku',
-                    Icons.camera_alt,
+
+                  // UPDATE: Document Upload Cards yang interaktif
+                  Obx(
+                    () => _buildDocumentCard(
+                      'Foto SIM',
+                      'Upload foto SIM yang masih berlaku',
+                      Icons.card_membership,
+                      controller.simPath.value,
+                      () => controller.pickDocumentImage('sim'),
+                    ),
                   ),
                   const SizedBox(height: 16),
-                  _buildDocumentCard(
-                    'Foto STNK',
-                    'Upload foto STNK kendaraan',
-                    Icons.description,
+                  Obx(
+                    () => _buildDocumentCard(
+                      'Foto STNK',
+                      'Upload foto STNK kendaraan',
+                      Icons.description,
+                      controller.stnkPath.value,
+                      () => controller.pickDocumentImage('stnk'),
+                    ),
                   ),
                   const SizedBox(height: 16),
-                  _buildDocumentCard(
-                    'Foto Kendaraan',
-                    'Upload foto kendaraan tampak depan',
-                    Icons.directions_car,
+                  Obx(
+                    () => _buildDocumentCard(
+                      'Foto Kendaraan',
+                      'Upload foto kendaraan tampak depan',
+                      Icons.motorcycle,
+                      controller.vehiclePath.value,
+                      () => controller.pickDocumentImage('vehicle'),
+                    ),
                   ),
                 ],
               ),
             ),
           ),
-          
           const SizedBox(height: 24),
           Row(
             children: [
@@ -221,17 +263,15 @@ class RegisterDriverView extends GetView<RegisterDriverController> {
     );
   }
 
+  // --- STEP 3: VERIFIKASI ---
   Widget _buildStep3() {
     return Padding(
       padding: const EdgeInsets.all(24.0),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Progress indicator
           _buildProgressIndicator(),
           const SizedBox(height: 32),
-          
-          // Step title
           const Text(
             'Verifikasi & Persetujuan',
             style: TextStyle(
@@ -243,13 +283,9 @@ class RegisterDriverView extends GetView<RegisterDriverController> {
           const SizedBox(height: 8),
           const Text(
             'Setujui syarat dan ketentuan untuk menjadi driver',
-            style: TextStyle(
-              fontSize: 16,
-              color: AppColors.textSecondary,
-            ),
+            style: TextStyle(fontSize: 16, color: AppColors.textSecondary),
           ),
           const SizedBox(height: 32),
-          
           Expanded(
             child: SingleChildScrollView(
               child: Column(
@@ -262,10 +298,10 @@ class RegisterDriverView extends GetView<RegisterDriverController> {
                       borderRadius: BorderRadius.circular(12),
                       border: Border.all(color: AppColors.border),
                     ),
-                    child: Column(
+                    child: const Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        const Text(
+                        Text(
                           'Syarat & Ketentuan Driver JekSoed',
                           style: TextStyle(
                             fontSize: 18,
@@ -273,14 +309,12 @@ class RegisterDriverView extends GetView<RegisterDriverController> {
                             color: AppColors.textPrimary,
                           ),
                         ),
-                        const SizedBox(height: 16),
-                        const Text(
+                        SizedBox(height: 16),
+                        Text(
                           '1. Driver wajib memiliki SIM yang masih berlaku\n'
                           '2. Kendaraan harus dalam kondisi baik dan terawat\n'
                           '3. Driver berkomitmen memberikan pelayanan terbaik\n'
-                          '4. Mengikuti semua aturan dan protokol keselamatan\n'
-                          '5. Bertanggung jawab atas keamanan penumpang\n'
-                          '6. Menjaga kebersihan dan kenyamanan kendaraan',
+                          '4. Mengikuti semua aturan dan protokol keselamatan\n',
                           style: TextStyle(
                             fontSize: 14,
                             color: AppColors.textSecondary,
@@ -290,56 +324,25 @@ class RegisterDriverView extends GetView<RegisterDriverController> {
                       ],
                     ),
                   ),
-                  
                   const SizedBox(height: 24),
-                  
-                  Obx(() => CheckboxListTile(
-                    value: controller.agreementAccepted.value,
-                    onChanged: (value) {
-                      controller.agreementAccepted.value = value ?? false;
-                    },
-                    title: const Text(
-                      'Saya menyetujui semua syarat dan ketentuan di atas',
-                      style: TextStyle(fontSize: 14),
-                    ),
-                    activeColor: AppColors.primary,
-                    controlAffinity: ListTileControlAffinity.leading,
-                  )),
-                  
-                  const SizedBox(height: 32),
-                  
-                  Container(
-                    padding: const EdgeInsets.all(16),
-                    decoration: BoxDecoration(
-                      color: AppColors.secondary.withOpacity(0.1),
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    child: Row(
-                      children: [
-                        Icon(
-                          Icons.info_outline,
-                          color: AppColors.secondary,
-                          size: 24,
-                        ),
-                        const SizedBox(width: 12),
-                        Expanded(
-                          child: Text(
-                            'Data Anda akan diverifikasi oleh tim admin. '
-                            'Proses verifikasi membutuhkan waktu 1-3 hari kerja.',
-                            style: TextStyle(
-                              fontSize: 13,
-                              color: AppColors.textSecondary,
-                            ),
-                          ),
-                        ),
-                      ],
+                  Obx(
+                    () => CheckboxListTile(
+                      value: controller.agreementAccepted.value,
+                      onChanged: (value) {
+                        controller.agreementAccepted.value = value ?? false;
+                      },
+                      title: const Text(
+                        'Saya menyetujui semua syarat dan ketentuan di atas',
+                        style: TextStyle(fontSize: 14),
+                      ),
+                      activeColor: AppColors.primary,
+                      controlAffinity: ListTileControlAffinity.leading,
                     ),
                   ),
                 ],
               ),
             ),
           ),
-          
           const SizedBox(height: 24),
           Row(
             children: [
@@ -347,16 +350,15 @@ class RegisterDriverView extends GetView<RegisterDriverController> {
                 child: _buildBackButton(() => controller.previousStep()),
               ),
               const SizedBox(width: 16),
-              Expanded(
-                flex: 2,
-                child: Obx(() => _buildSubmitButton()),
-              ),
+              Expanded(flex: 2, child: Obx(() => _buildSubmitButton())),
             ],
           ),
         ],
       ),
     );
   }
+
+  // --- WIDGETS PENDUKUNG ---
 
   Widget _buildProgressIndicator() {
     return Column(
@@ -376,39 +378,6 @@ class RegisterDriverView extends GetView<RegisterDriverController> {
                   ),
                 ),
               ),
-          ],
-        ),
-        const SizedBox(height: 8),
-        Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            Text(
-              'Identitas',
-              style: TextStyle(
-                fontSize: 12,
-                color: controller.currentStep.value >= 0
-                    ? AppColors.primary
-                    : AppColors.textSecondary,
-              ),
-            ),
-            Text(
-              'Dokumen',
-              style: TextStyle(
-                fontSize: 12,
-                color: controller.currentStep.value >= 1
-                    ? AppColors.primary
-                    : AppColors.textSecondary,
-              ),
-            ),
-            Text(
-              'Verifikasi',
-              style: TextStyle(
-                fontSize: 12,
-                color: controller.currentStep.value >= 2
-                    ? AppColors.primary
-                    : AppColors.textSecondary,
-              ),
-            ),
           ],
         ),
       ],
@@ -431,68 +400,82 @@ class RegisterDriverView extends GetView<RegisterDriverController> {
         labelText: label,
         prefixIcon: Icon(icon),
         suffixIcon: suffixIcon,
-        border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
-        ),
-        enabledBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
-          borderSide: BorderSide(color: AppColors.border),
-        ),
-        focusedBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
-          borderSide: BorderSide(color: AppColors.primary, width: 2),
-        ),
+        border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
       ),
     );
   }
 
-  Widget _buildDocumentCard(String title, String subtitle, IconData icon) {
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        border: Border.all(color: AppColors.border),
-        borderRadius: BorderRadius.circular(12),
-      ),
-      child: Row(
-        children: [
-          Container(
-            padding: const EdgeInsets.all(12),
-            decoration: BoxDecoration(
-              color: AppColors.lightBackground,
-              borderRadius: BorderRadius.circular(8),
+  // UPDATE: Widget DocumentCard sekarang support onTap dan menampilkan status terpilih
+  Widget _buildDocumentCard(
+    String title,
+    String subtitle,
+    IconData icon,
+    String selectedPath,
+    VoidCallback onTap,
+  ) {
+    final isSelected = selectedPath.isNotEmpty;
+
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          border: Border.all(
+            color: isSelected ? AppColors.success : AppColors.border,
+            width: isSelected ? 2 : 1,
+          ),
+          borderRadius: BorderRadius.circular(12),
+          color: isSelected
+              ? AppColors.success.withOpacity(0.05)
+              : Colors.white,
+        ),
+        child: Row(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: AppColors.lightBackground,
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: Icon(
+                isSelected ? Icons.check : icon,
+                color: isSelected ? AppColors.success : AppColors.primary,
+                size: 24,
+              ),
             ),
-            child: Icon(icon, color: AppColors.primary, size: 24),
-          ),
-          const SizedBox(width: 16),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  title,
-                  style: const TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.w600,
-                    color: AppColors.textPrimary,
+            const SizedBox(width: 16),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    isSelected ? "$title (Tersimpan)" : title,
+                    style: TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w600,
+                      color: isSelected
+                          ? AppColors.success
+                          : AppColors.textPrimary,
+                    ),
                   ),
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  subtitle,
-                  style: const TextStyle(
-                    fontSize: 14,
-                    color: AppColors.textSecondary,
+                  const SizedBox(height: 4),
+                  Text(
+                    isSelected ? "Ketuk untuk mengubah foto" : subtitle,
+                    style: const TextStyle(
+                      fontSize: 14,
+                      color: AppColors.textSecondary,
+                    ),
                   ),
-                ),
-              ],
+                ],
+              ),
             ),
-          ),
-          Icon(
-            Icons.upload_file,
-            color: AppColors.textSecondary,
-            size: 20,
-          ),
-        ],
+            Icon(
+              isSelected ? Icons.check_circle : Icons.upload_file,
+              color: isSelected ? AppColors.success : AppColors.textSecondary,
+              size: 24,
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -504,9 +487,7 @@ class RegisterDriverView extends GetView<RegisterDriverController> {
         backgroundColor: AppColors.primary,
         foregroundColor: Colors.white,
         padding: const EdgeInsets.symmetric(vertical: 16),
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(12),
-        ),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
       ),
       child: const Text(
         'Lanjut',
@@ -522,9 +503,7 @@ class RegisterDriverView extends GetView<RegisterDriverController> {
         foregroundColor: AppColors.primary,
         side: BorderSide(color: AppColors.primary),
         padding: const EdgeInsets.symmetric(vertical: 16),
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(12),
-        ),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
       ),
       child: const Text(
         'Kembali',
@@ -534,15 +513,15 @@ class RegisterDriverView extends GetView<RegisterDriverController> {
   }
 
   Widget _buildSubmitButton() {
-    return Obx(() => ElevatedButton(
-      onPressed: controller.isLoading.value ? null : () => controller.submitStep3(),
+    return ElevatedButton(
+      onPressed: controller.isLoading.value
+          ? null
+          : () => controller.submitStep3(),
       style: ElevatedButton.styleFrom(
         backgroundColor: AppColors.primary,
         foregroundColor: Colors.white,
         padding: const EdgeInsets.symmetric(vertical: 16),
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(12),
-        ),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
       ),
       child: controller.isLoading.value
           ? const SizedBox(
@@ -550,13 +529,13 @@ class RegisterDriverView extends GetView<RegisterDriverController> {
               height: 20,
               child: CircularProgressIndicator(
                 strokeWidth: 2,
-                valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                color: Colors.white,
               ),
             )
           : const Text(
               'Daftar Sebagai Driver',
               style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
             ),
-    ));
+    );
   }
 }

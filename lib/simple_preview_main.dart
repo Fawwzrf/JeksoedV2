@@ -360,18 +360,6 @@ class PreviewLoginView extends StatelessWidget {
             ),
 
             Spacer(),
-
-            // Demo info button
-            Center(
-              child: TextButton.icon(
-                onPressed: () => PreviewHelper.showPreviewInfo(),
-                icon: Icon(Icons.help_outline, size: 20),
-                label: Text('Bantuan Preview Mode'),
-                style: TextButton.styleFrom(
-                  foregroundColor: AppColors.textSecondary,
-                ),
-              ),
-            ),
           ],
         ),
       ),

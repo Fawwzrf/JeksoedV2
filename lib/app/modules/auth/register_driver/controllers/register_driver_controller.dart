@@ -1,10 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import 'package:image_picker/image_picker.dart';
 import '../../../../routes/app_pages.dart';
 import '../../../../data/services/auth_service.dart';
 
 class RegisterDriverController extends GetxController {
-  // Step 1: Identitas
+  //  Identitas
   final nameController = TextEditingController();
   final nimController = TextEditingController();
   final emailController = TextEditingController();
@@ -12,11 +13,19 @@ class RegisterDriverController extends GetxController {
   final passwordController = TextEditingController();
   final confirmPasswordController = TextEditingController();
 
-  // Step 2: Dokumen
+  // Profile Image Handling
+  final RxString profileImagePath = ''.obs;
+  final RxString simPath = ''.obs;
+  final RxString stnkPath = ''.obs;
+  final RxString vehiclePath = ''.obs;
+
+  final ImagePicker _picker = ImagePicker();
+
+  // Dokumen
   final driverLicenseController = TextEditingController();
   final vehiclePlateController = TextEditingController();
 
-  // Step 3: Verifikasi
+  //  Verifikasi
   final agreementAccepted = false.obs;
 
   // State management
@@ -27,6 +36,50 @@ class RegisterDriverController extends GetxController {
 
   void togglePasswordVisibility() => isPasswordVisible.toggle();
   void toggleConfirmPasswordVisibility() => isConfirmPasswordVisible.toggle();
+
+  Future<void> pickProfileImage() async {
+    try {
+      final XFile? image = await _picker.pickImage(
+        source: ImageSource.gallery,
+        imageQuality: 80,
+      );
+      if (image != null) {
+        profileImagePath.value = image.path;
+      }
+    } catch (e) {
+      Get.snackbar(
+        'Error',
+        'Gagal mengambil gambar: $e',
+        backgroundColor: Colors.red,
+        colorText: Colors.white,
+      );
+    }
+  }
+
+  Future<void> pickDocumentImage(String type) async {
+    try {
+      final XFile? image = await _picker.pickImage(
+        source: ImageSource.gallery,
+        imageQuality: 80,
+      );
+
+      if (image != null) {
+        switch (type) {
+          case 'sim':
+            simPath.value = image.path;
+            break;
+          case 'stnk': // atau ktp
+            stnkPath.value = image.path;
+            break;
+          case 'vehicle':
+            vehiclePath.value = image.path;
+            break;
+        }
+      }
+    } catch (e) {
+      Get.snackbar('Error', 'Gagal mengambil dokumen: $e');
+    }
+  }
 
   void nextStep() {
     if (currentStep.value < 2) {
@@ -80,7 +133,7 @@ class RegisterDriverController extends GetxController {
 
       final userData = {
         'name': nameController.text,
-        'nim': nimController.text, // Masukkan NIM disini
+        'nim': nimController.text,
         'email': emailController.text,
         'phone': phoneController.text,
         'password': passwordController.text,
@@ -90,8 +143,7 @@ class RegisterDriverController extends GetxController {
       final driverData = {
         'licenseNumber': driverLicenseController.text,
         'vehiclePlate': vehiclePlateController.text,
-        'vehicleType': 'motor', // Default atau ambil dari inputan lain
-        // Path dokumen (sementara null atau sesuaikan jika ada image picker)
+        'vehicleType': 'motor',
         'ktp_path': null,
         'sim_path': null,
         'vehicle_path': null,

@@ -103,11 +103,7 @@ class MyApp extends StatelessWidget {
       defaultTransition: Transition.cupertino,
       transitionDuration: Duration(milliseconds: 300),
       // Show preview info on app start
-      onReady: () {
-        Future.delayed(Duration(milliseconds: 3000), () {
-          PreviewHelper.showPreviewInfo();
-        });
-      },
+      onReady: () {},
     );
   }
 }

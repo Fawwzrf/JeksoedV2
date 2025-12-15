@@ -1,9 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import 'package:google_maps_flutter/google_maps_flutter.dart';
+import '../../../../data/services/ride_service.dart';
 
 enum OrderStage { search, pickupConfirm, routeConfirm, findingDriver }
 
 class CreateOrderController extends GetxController {
+  final RideService _rideService = Get.find<RideService>();
+
   final pickupController = TextEditingController();
   final destinationController = TextEditingController();
   final notesController = TextEditingController();
@@ -11,38 +15,35 @@ class CreateOrderController extends GetxController {
   final isLoading = false.obs;
   final isFormValid = false.obs;
   final currentStage = OrderStage.search.obs;
-  final selectedVehicleType = ''.obs;
+  final selectedVehicleType = 'motor'.obs;
+
   final estimatedPrice = 0.0.obs;
   final estimatedDistance = 0.0.obs;
   final estimatedDuration = 0.obs;
+  String? encodedPolyline; // Untuk menyimpan rute
 
-  // Mock driver data for finding driver stage
-  final driverFound = false.obs;
-  final driverName = ''.obs;
-  final driverRating = 0.0.obs;
-  final driverPlate = ''.obs;
-  final driverArrivalTime = 0.obs;
+  // Default coordinates (Purwokerto)
+  LatLng? pickupLatLng = const LatLng(-7.4242, 109.2303);
+  LatLng? destLatLng = const LatLng(-7.4000, 109.2500);
 
   final vehicleTypes = [
     {
       'type': 'motor',
       'name': 'JekMotor',
       'icon': Icons.motorcycle,
-      'pricePerKm': 2000,
-      'description': 'Cepat dan praktis untuk perjalanan solo',
+      'description': 'Cepat dan hemat untuk sendiri',
     },
     {
       'type': 'mobil',
       'name': 'JekMobil',
       'icon': Icons.directions_car,
-      'pricePerKm': 3500,
-      'description': 'Nyaman untuk perjalanan berlima',
+      'description': 'Nyaman untuk beramai-ramai',
     },
   ];
+
   @override
   void onInit() {
     super.onInit();
-    // Set default vehicle type
     if (vehicleTypes.isNotEmpty) {
       selectedVehicleType.value = vehicleTypes[0]['type'] as String;
     }
@@ -56,8 +57,8 @@ class CreateOrderController extends GetxController {
         destinationController.text.isNotEmpty;
   }
 
-  // Stage navigation methods
-  void nextStage() {
+  // --- NAVIGATION ---
+  void nextStage() async {
     switch (currentStage.value) {
       case OrderStage.search:
         if (pickupController.text.isNotEmpty &&
@@ -65,16 +66,18 @@ class CreateOrderController extends GetxController {
           currentStage.value = OrderStage.pickupConfirm;
         }
         break;
+
       case OrderStage.pickupConfirm:
+        // Saat konfirmasi pickup, hitung rute & harga
+        await calculateRouteAndPrice();
         currentStage.value = OrderStage.routeConfirm;
-        calculatePrice();
         break;
+
       case OrderStage.routeConfirm:
-        currentStage.value = OrderStage.findingDriver;
-        findDriver();
+        createRideRequest();
         break;
+
       case OrderStage.findingDriver:
-        // Navigate to trip screen or back to home
         Get.offAllNamed('/passenger-main');
         break;
     }
@@ -97,107 +100,107 @@ class CreateOrderController extends GetxController {
     }
   }
 
-  void findDriver() async {
-    driverFound.value = false;
-
-    // Simulate driver search
-    await Future.delayed(const Duration(seconds: 3));
-
-    // Mock driver data
-    driverFound.value = true;
-    driverName.value = 'Ahmad Sudirman';
-    driverRating.value = 4.8;
-    driverPlate.value = 'R 1234 ABC';
-    driverArrivalTime.value = 5;
-  }
-
-  void cancelSearch() {
-    Get.back();
-  }
+  // --- LOGIC ---
 
   void selectVehicleType(String type) {
     selectedVehicleType.value = type;
-    calculatePrice();
-  }
-
-  void calculatePrice() {
-    // Mock calculation - in real app this would use Google Maps API
-    if (pickupController.text.isNotEmpty &&
-        destinationController.text.isNotEmpty) {
-      // Simulate distance calculation
-      estimatedDistance.value = 5.0; // km
-      estimatedDuration.value = 15; // minutes
-
-      final selectedType = vehicleTypes.firstWhere(
-        (type) => type['type'] == selectedVehicleType.value,
-        orElse: () => vehicleTypes[0],
-      );
-
-      final pricePerKm = selectedType['pricePerKm'] as int;
-      estimatedPrice.value =
-          estimatedDistance.value * pricePerKm + 5000; // base fare
+    // Recalculate price only (distance doesn't change)
+    if (estimatedDistance.value > 0) {
+      _recalculatePriceOnly();
     }
   }
 
-  void setPickupLocation(String location) {
-    pickupController.text = location;
-    calculatePrice();
+  // Menggunakan RideService untuk menghitung rute
+  Future<void> calculateRouteAndPrice() async {
+    if (pickupLatLng == null || destLatLng == null) return;
+
+    isLoading.value = true;
+    try {
+      // 1. Get Route Details (Simulasi API)
+      final routeDetails = await _rideService.getRouteDetails(
+        origin: pickupLatLng!,
+        destination: destLatLng!,
+      );
+
+      estimatedDistance.value = routeDetails.distanceKm;
+      estimatedDuration.value = routeDetails.durationMins;
+      encodedPolyline = routeDetails.encodedPolyline;
+
+      // 2. Calculate Price
+      _recalculatePriceOnly();
+    } catch (e) {
+      Get.snackbar("Error", "Gagal menghitung rute: $e");
+    } finally {
+      isLoading.value = false;
+    }
   }
 
-  void setDestinationLocation(String location) {
-    destinationController.text = location;
-    calculatePrice();
+  void _recalculatePriceOnly() {
+    RideType type = selectedVehicleType.value == 'mobil'
+        ? RideType.premium
+        : RideType.standard;
+
+    estimatedPrice.value = _rideService.calculateFare(
+      distanceKm: estimatedDistance.value,
+      rideType: type,
+    );
+  }
+
+  // Helper untuk View menetapkan lokasi (misal dari daftar favorit)
+  void setPickupLocation(String address, LatLng latLng) {
+    pickupController.text = address;
+    pickupLatLng = latLng;
+  }
+
+  void setDestinationLocation(String address, LatLng latLng) {
+    destinationController.text = address;
+    destLatLng = latLng;
   }
 
   void createRideRequest() async {
-    if (pickupController.text.isEmpty) {
-      Get.snackbar('Error', 'Silakan pilih lokasi penjemputan');
-      return;
-    }
-
-    if (destinationController.text.isEmpty) {
-      Get.snackbar('Error', 'Silakan pilih lokasi tujuan');
-      return;
-    }
-
-    if (selectedVehicleType.value.isEmpty) {
-      Get.snackbar('Error', 'Silakan pilih jenis kendaraan');
+    if (pickupLatLng == null || destLatLng == null) {
+      Get.snackbar('Error', 'Lokasi tidak valid');
       return;
     }
 
     try {
       isLoading.value = true;
 
-      // TODO: Implement actual ride request creation
-      await Future.delayed(Duration(seconds: 2)); // Simulate API call
-
-      // Generate mock ride request ID
-      final rideRequestId = 'ride_${DateTime.now().millisecondsSinceEpoch}';
-
-      Get.snackbar(
-        'Berhasil',
-        'Permintaan perjalanan berhasil dibuat',
-        backgroundColor: Colors.green,
-        colorText: Colors.white,
+      final success = await _rideService.requestRide(
+        pickupLocation: LocationData(
+          latitude: pickupLatLng!.latitude,
+          longitude: pickupLatLng!.longitude,
+          address: pickupController.text,
+        ),
+        destinationLocation: LocationData(
+          latitude: destLatLng!.latitude,
+          longitude: destLatLng!.longitude,
+          address: destinationController.text,
+        ),
+        rideType: selectedVehicleType.value == 'mobil'
+            ? RideType.premium
+            : RideType.standard,
+        notes: notesController.text,
+        estimatedFare: estimatedPrice.value,
+        estimatedDistance: estimatedDistance.value,
+        estimatedDuration: estimatedDuration.value.toDouble(),
+        encodedPolyline: encodedPolyline,
       );
 
-      // Navigate to finding driver screen
-      Get.toNamed('/finding-driver/$rideRequestId');
+      if (success) {
+        final rideId = _rideService.currentRide?.id;
+        if (rideId != null) {
+          Get.offNamed('/finding-driver/$rideId');
+        }
+      }
     } catch (e) {
-      Get.snackbar(
-        'Error',
-        'Gagal membuat permintaan: ${e.toString()}',
-        backgroundColor: Colors.red,
-        colorText: Colors.white,
-      );
+      Get.snackbar('Error', 'Gagal membuat pesanan: $e');
     } finally {
       isLoading.value = false;
     }
   }
 
-  void goBack() {
-    Get.back();
-  }
+  void cancelSearch() => Get.back();
 
   @override
   void onClose() {

@@ -141,6 +141,7 @@ class AuthService extends GetxService {
           'name': userData['name'],
           'phone': userData['phone'],
           'nim': userData['nim'],
+          'role': 'driver',
         },
       );
 
@@ -155,13 +156,28 @@ class AuthService extends GetxService {
         driverData['vehicle_path'],
       );
 
-      final driverProfile = {
+      final userProfile = {
         'id': userId,
         'name': userData['name'],
-        'nim': userData['nim'],
         'email': userData['email'],
         'phone': userData['phone'],
+        'nim': userData['nim'],
         'user_type': 'driver',
+        'photo_url': null,
+        'balance': 0,
+        'is_online': false,
+        'total_rating': 5.0,
+        'rating_count': 1,
+        'created_at': DateTime.now().toIso8601String(),
+        'updated_at': DateTime.now().toIso8601String(),
+        'license_plate': driverData['vehiclePlate'],
+      };
+      await _supabase.from('users').insert(userProfile);
+
+      final driverProfile = {
+        'id': userId,
+        'user_id': userId,
+        'name': userData['name'],
         'license_number': driverData['licenseNumber'],
         'vehicle_type': driverData['vehicleType'],
         'vehicle_plate': driverData['vehiclePlate'],

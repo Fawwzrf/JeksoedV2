@@ -62,7 +62,7 @@ class TripPassengerSheet extends StatelessWidget {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        driver?.nama ?? 'Loading...',
+                        driver?.name ?? 'Loading...',
                         style: const TextStyle(
                           fontSize: 18,
                           fontWeight: FontWeight.bold,
@@ -128,7 +128,7 @@ class TripPassengerSheet extends StatelessWidget {
                   style: TextStyle(color: Colors.grey),
                 ),
                 Text(
-                  'Rp${rideRequest.fare}',
+                  'Rp${rideRequest.fare ?? 0}',
                   style: const TextStyle(
                     fontWeight: FontWeight.bold,
                     fontSize: 16,

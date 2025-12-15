@@ -2,10 +2,10 @@
 
 class UserModel {
   final String id;
-  final String nama;
+  final String name;
   final String email;
   final String? photoUrl;
-  final String role;
+  final String userType;
   final String? licensePlate;
   final double totalRating;
   final int ratingCount;
@@ -14,10 +14,10 @@ class UserModel {
 
   UserModel({
     required this.id,
-    required this.nama,
+    required this.name,
     required this.email,
     this.photoUrl,
-    required this.role,
+    required this.userType,
     this.licensePlate,
     this.totalRating = 0.0,
     this.ratingCount = 0,
@@ -28,10 +28,10 @@ class UserModel {
   factory UserModel.fromMap(Map<String, dynamic> data, {String? id}) {
     return UserModel(
       id: id ?? '',
-      nama: data['nama'] ?? '',
+      name: data['name'] ?? '',
       email: data['email'] ?? '',
       photoUrl: data['photoUrl'],
-      role: data['role'] ?? 'passenger',
+      userType: data['userType'] ?? 'passenger',
       licensePlate: data['licensePlate'],
       totalRating: (data['totalRating'] ?? 0).toDouble(),
       ratingCount: (data['ratingCount'] ?? 0).toInt(),
@@ -42,10 +42,10 @@ class UserModel {
 
   Map<String, dynamic> toMap() {
     return {
-      'nama': nama,
+      'name': name,
       'email': email,
       'photoUrl': photoUrl,
-      'role': role,
+      'userType': userType,
       'licensePlate': licensePlate,
       'totalRating': totalRating,
       'ratingCount': ratingCount,
@@ -56,10 +56,10 @@ class UserModel {
 
   UserModel copyWith({
     String? id,
-    String? nama,
+    String? name,
     String? email,
     String? photoUrl,
-    String? role,
+    String? userType,
     String? licensePlate,
     double? totalRating,
     int? ratingCount,
@@ -68,10 +68,10 @@ class UserModel {
   }) {
     return UserModel(
       id: id ?? this.id,
-      nama: nama ?? this.nama,
+      name: name ?? this.name,
       email: email ?? this.email,
       photoUrl: photoUrl ?? this.photoUrl,
-      role: role ?? this.role,
+      userType: userType ?? this.userType,
       licensePlate: licensePlate ?? this.licensePlate,
       totalRating: totalRating ?? this.totalRating,
       ratingCount: ratingCount ?? this.ratingCount,
@@ -87,6 +87,6 @@ class UserModel {
 
   @override
   String toString() {
-    return 'UserModel(id: $id, nama: $nama, role: $role)';
+    return 'UserModel(id: $id, name: $name, userType: $userType)';
   }
 }

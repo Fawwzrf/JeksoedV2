@@ -1,4 +1,4 @@
-// filepath: e:\Flutter\JeksoedV2\jeksoedv2\lib\app\modules\passenger\create_order\views\create_order_view.dart
+// filepath: lib/app/modules/passenger/create_order/views/create_order_view.dart
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import '../controllers/create_order_controller.dart';
@@ -54,11 +54,11 @@ class CreateOrderView extends GetView<CreateOrderController> {
                     color: AppColors.textGrey.withValues(alpha: 0.1),
                     borderRadius: BorderRadius.circular(12),
                   ),
-                  child: Icon(Icons.arrow_back, size: 20),
+                  child: const Icon(Icons.arrow_back, size: 20),
                 ),
               ),
               const SizedBox(width: 16),
-              Expanded(
+              const Expanded(
                 child: Text(
                   'Kemana hari ini?',
                   style: TextStyle(
@@ -104,7 +104,8 @@ class CreateOrderView extends GetView<CreateOrderController> {
                         label: 'Dari',
                         hint: 'Lokasi penjemputan',
                         controller: controller.pickupController,
-                        onTap: () => _showLocationPicker(true),
+                        onTap: () =>
+                            _showLocationPicker(true), // Fixed: Defined method
                       ),
 
                       const SizedBox(height: 16),
@@ -121,7 +122,7 @@ class CreateOrderView extends GetView<CreateOrderController> {
                           Container(
                             margin: const EdgeInsets.symmetric(horizontal: 12),
                             child: GestureDetector(
-                              onTap: _swapLocations,
+                              onTap: _swapLocations, // Fixed: Defined method
                               child: Container(
                                 padding: const EdgeInsets.all(8),
                                 decoration: BoxDecoration(
@@ -129,7 +130,7 @@ class CreateOrderView extends GetView<CreateOrderController> {
                                   borderRadius: BorderRadius.circular(20),
                                   border: Border.all(color: AppColors.border),
                                 ),
-                                child: Icon(
+                                child: const Icon(
                                   Icons.swap_vert,
                                   size: 16,
                                   color: AppColors.textSecondary,
@@ -155,7 +156,8 @@ class CreateOrderView extends GetView<CreateOrderController> {
                         label: 'Ke',
                         hint: 'Lokasi tujuan',
                         controller: controller.destinationController,
-                        onTap: () => _showLocationPicker(false),
+                        onTap: () =>
+                            _showLocationPicker(false), // Fixed: Defined method
                       ),
                     ],
                   ),
@@ -164,7 +166,7 @@ class CreateOrderView extends GetView<CreateOrderController> {
                 const SizedBox(height: 24),
 
                 // Recent locations or suggestions
-                Text(
+                const Text(
                   'Lokasi Terkini',
                   style: TextStyle(
                     fontSize: 16,
@@ -230,7 +232,7 @@ class CreateOrderView extends GetView<CreateOrderController> {
                   decoration: BoxDecoration(
                     color: Colors.grey.withValues(alpha: 0.2),
                   ),
-                  child: Center(
+                  child: const Center(
                     child: Column(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
@@ -239,7 +241,7 @@ class CreateOrderView extends GetView<CreateOrderController> {
                           size: 48,
                           color: AppColors.textSecondary,
                         ),
-                        const SizedBox(height: 8),
+                        SizedBox(height: 8),
                         Text(
                           'Map Integration\n(Google Maps)',
                           textAlign: TextAlign.center,
@@ -274,7 +276,7 @@ class CreateOrderView extends GetView<CreateOrderController> {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text(
+                        const Text(
                           'Lokasi Penjemputan',
                           style: TextStyle(
                             fontSize: 12,
@@ -285,7 +287,7 @@ class CreateOrderView extends GetView<CreateOrderController> {
                         const SizedBox(height: 4),
                         Row(
                           children: [
-                            Icon(
+                            const Icon(
                               Icons.radio_button_checked,
                               color: AppColors.success,
                               size: 20,
@@ -294,7 +296,7 @@ class CreateOrderView extends GetView<CreateOrderController> {
                             Expanded(
                               child: Text(
                                 controller.pickupController.text,
-                                style: TextStyle(
+                                style: const TextStyle(
                                   fontSize: 16,
                                   fontWeight: FontWeight.w600,
                                   color: AppColors.textPrimary,
@@ -376,7 +378,7 @@ class CreateOrderView extends GetView<CreateOrderController> {
                     children: [
                       Row(
                         children: [
-                          Icon(
+                          const Icon(
                             Icons.radio_button_checked,
                             color: AppColors.success,
                             size: 20,
@@ -385,7 +387,7 @@ class CreateOrderView extends GetView<CreateOrderController> {
                           Expanded(
                             child: Text(
                               controller.pickupController.text,
-                              style: TextStyle(
+                              style: const TextStyle(
                                 fontSize: 14,
                                 color: AppColors.textPrimary,
                               ),
@@ -408,7 +410,7 @@ class CreateOrderView extends GetView<CreateOrderController> {
                       ),
                       Row(
                         children: [
-                          Icon(
+                          const Icon(
                             Icons.location_on,
                             color: AppColors.error,
                             size: 20,
@@ -417,7 +419,7 @@ class CreateOrderView extends GetView<CreateOrderController> {
                           Expanded(
                             child: Text(
                               controller.destinationController.text,
-                              style: TextStyle(
+                              style: const TextStyle(
                                 fontSize: 14,
                                 color: AppColors.textPrimary,
                               ),
@@ -432,7 +434,7 @@ class CreateOrderView extends GetView<CreateOrderController> {
                 const SizedBox(height: 24),
 
                 // Vehicle selection
-                Text(
+                const Text(
                   'Pilih Kendaraan',
                   style: TextStyle(
                     fontSize: 18,
@@ -486,11 +488,11 @@ class CreateOrderView extends GetView<CreateOrderController> {
                     hintText: 'Catatan untuk driver (opsional)',
                     border: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(12),
-                      borderSide: BorderSide(color: AppColors.border),
+                      borderSide: const BorderSide(color: AppColors.border),
                     ),
                     focusedBorder: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(12),
-                      borderSide: BorderSide(
+                      borderSide: const BorderSide(
                         color: AppColors.primary,
                         width: 2,
                       ),
@@ -534,83 +536,62 @@ class CreateOrderView extends GetView<CreateOrderController> {
     );
   }
 
-  // Stage 4: Finding Driver Stage
+  // Stage 4: Finding Driver Stage (The Missing Part)
   Widget _buildFindingDriverStage() {
-    return Obx(
-      () => Column(
+    return Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          // Header
+          // Animated searching icon
           Container(
-            padding: const EdgeInsets.fromLTRB(20, 16, 20, 16),
+            width: 120,
+            height: 120,
             decoration: BoxDecoration(
-              color: Colors.white,
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.grey.withValues(alpha: 0.1),
-                  blurRadius: 8,
-                  offset: const Offset(0, 2),
-                ),
-              ],
+              color: AppColors.primary.withValues(alpha: 0.1),
+              shape: BoxShape.circle,
             ),
-            child: Row(
-              children: [
-                Expanded(
-                  child: Text(
-                    controller.driverFound.value
-                        ? 'Driver Ditemukan!'
-                        : 'Mencari Driver...',
-                    style: TextStyle(
-                      fontSize: 18,
-                      fontWeight: FontWeight.w600,
-                      color: AppColors.textPrimary,
-                    ),
-                  ),
+            child: const Center(
+              child: SizedBox(
+                width: 60,
+                height: 60,
+                child: CircularProgressIndicator(
+                  color: AppColors.primary,
+                  strokeWidth: 4,
                 ),
-                if (!controller.driverFound.value)
-                  GestureDetector(
-                    onTap: controller.cancelSearch,
-                    child: Text(
-                      'Batal',
-                      style: TextStyle(
-                        fontSize: 16,
-                        color: AppColors.error,
-                        fontWeight: FontWeight.w500,
-                      ),
-                    ),
-                  ),
-              ],
+              ),
             ),
           ),
 
-          // Content
-          Expanded(
-            child: Container(
-              padding: const EdgeInsets.all(20),
-              child: controller.driverFound.value
-                  ? _buildDriverFoundContent()
-                  : _buildSearchingContent(),
+          const SizedBox(height: 24),
+
+          const Text(
+            'Mencari driver terdekat...',
+            style: TextStyle(
+              fontSize: 18,
+              fontWeight: FontWeight.w600,
+              color: AppColors.textPrimary,
             ),
           ),
 
-          // Action button
-          if (controller.driverFound.value)
-            Container(
-              padding: const EdgeInsets.all(20),
-              decoration: BoxDecoration(
-                color: Colors.white,
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.grey.withValues(alpha: 0.1),
-                    blurRadius: 8,
-                    offset: const Offset(0, -2),
-                  ),
-                ],
-              ),
-              child: _buildActionButton(
-                text: 'Selesai',
-                onPressed: controller.nextStage,
-              ),
+          const SizedBox(height: 8),
+
+          const Text(
+            'Tunggu sebentar, kami sedang mencarikan\ndriver terbaik untuk Anda',
+            textAlign: TextAlign.center,
+            style: TextStyle(fontSize: 14, color: AppColors.textSecondary),
+          ),
+
+          const SizedBox(height: 32),
+
+          // Cancel button
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 32),
+            child: _buildActionButton(
+              text: 'Batalkan Pencarian',
+              onPressed: controller.cancelSearch,
+              isSecondary: true,
             ),
+          ),
         ],
       ),
     );
@@ -640,14 +621,14 @@ class CreateOrderView extends GetView<CreateOrderController> {
                 color: AppColors.textGrey.withValues(alpha: 0.1),
                 borderRadius: BorderRadius.circular(12),
               ),
-              child: Icon(Icons.arrow_back, size: 20),
+              child: const Icon(Icons.arrow_back, size: 20),
             ),
           ),
           const SizedBox(width: 16),
           Expanded(
             child: Text(
               title,
-              style: TextStyle(
+              style: const TextStyle(
                 fontSize: 18,
                 fontWeight: FontWeight.w600,
                 color: AppColors.textPrimary,
@@ -686,7 +667,7 @@ class CreateOrderView extends GetView<CreateOrderController> {
                 children: [
                   Text(
                     label,
-                    style: TextStyle(
+                    style: const TextStyle(
                       fontSize: 12,
                       color: AppColors.textSecondary,
                       fontWeight: FontWeight.w500,
@@ -705,7 +686,7 @@ class CreateOrderView extends GetView<CreateOrderController> {
                 ],
               ),
             ),
-            Icon(
+            const Icon(
               Icons.keyboard_arrow_right,
               size: 20,
               color: AppColors.textSecondary,
@@ -730,12 +711,19 @@ class CreateOrderView extends GetView<CreateOrderController> {
           ),
           child: Row(
             children: [
-              Icon(Icons.history, size: 20, color: AppColors.textSecondary),
+              const Icon(
+                Icons.history,
+                size: 20,
+                color: AppColors.textSecondary,
+              ),
               const SizedBox(width: 12),
               Expanded(
                 child: Text(
                   location,
-                  style: TextStyle(fontSize: 14, color: AppColors.textPrimary),
+                  style: const TextStyle(
+                    fontSize: 14,
+                    color: AppColors.textPrimary,
+                  ),
                 ),
               ),
             ],
@@ -806,7 +794,7 @@ class CreateOrderView extends GetView<CreateOrderController> {
                   children: [
                     Text(
                       name,
-                      style: TextStyle(
+                      style: const TextStyle(
                         fontSize: 16,
                         fontWeight: FontWeight.w600,
                         color: AppColors.textPrimary,
@@ -815,7 +803,7 @@ class CreateOrderView extends GetView<CreateOrderController> {
                     const SizedBox(height: 2),
                     Text(
                       description,
-                      style: TextStyle(
+                      style: const TextStyle(
                         fontSize: 12,
                         color: AppColors.textSecondary,
                       ),
@@ -823,7 +811,7 @@ class CreateOrderView extends GetView<CreateOrderController> {
                     const SizedBox(height: 4),
                     Text(
                       'Rp ${pricePerKm.toString()}/km',
-                      style: TextStyle(
+                      style: const TextStyle(
                         fontSize: 14,
                         fontWeight: FontWeight.w500,
                         color: AppColors.primary,
@@ -839,7 +827,7 @@ class CreateOrderView extends GetView<CreateOrderController> {
                     color: AppColors.primary,
                     shape: BoxShape.circle,
                   ),
-                  child: Icon(Icons.check, color: Colors.white, size: 16),
+                  child: const Icon(Icons.check, color: Colors.white, size: 16),
                 ),
             ],
           ),
@@ -858,7 +846,7 @@ class CreateOrderView extends GetView<CreateOrderController> {
       ),
       child: Column(
         children: [
-          Row(
+          const Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               Text(
@@ -880,14 +868,14 @@ class CreateOrderView extends GetView<CreateOrderController> {
                   Obx(
                     () => Text(
                       '${controller.estimatedDistance.value.toStringAsFixed(1)} km',
-                      style: TextStyle(
+                      style: const TextStyle(
                         fontSize: 16,
                         fontWeight: FontWeight.w600,
                         color: AppColors.textPrimary,
                       ),
                     ),
                   ),
-                  Text(
+                  const Text(
                     'Jarak',
                     style: TextStyle(
                       fontSize: 12,
@@ -901,14 +889,14 @@ class CreateOrderView extends GetView<CreateOrderController> {
                   Obx(
                     () => Text(
                       '${controller.estimatedDuration.value} min',
-                      style: TextStyle(
+                      style: const TextStyle(
                         fontSize: 16,
                         fontWeight: FontWeight.w600,
                         color: AppColors.textPrimary,
                       ),
                     ),
                   ),
-                  Text(
+                  const Text(
                     'Waktu',
                     style: TextStyle(
                       fontSize: 12,
@@ -922,14 +910,14 @@ class CreateOrderView extends GetView<CreateOrderController> {
                   Obx(
                     () => Text(
                       'Rp ${controller.estimatedPrice.value.toStringAsFixed(0)}',
-                      style: TextStyle(
+                      style: const TextStyle(
                         fontSize: 18,
                         fontWeight: FontWeight.bold,
                         color: AppColors.primary,
                       ),
                     ),
                   ),
-                  Text(
+                  const Text(
                     'Total',
                     style: TextStyle(
                       fontSize: 12,
@@ -942,196 +930,6 @@ class CreateOrderView extends GetView<CreateOrderController> {
           ),
         ],
       ),
-    );
-  }
-
-  Widget _buildSearchingContent() {
-    return Column(
-      mainAxisAlignment: MainAxisAlignment.center,
-      children: [
-        // Animated searching icon
-        Container(
-          width: 120,
-          height: 120,
-          decoration: BoxDecoration(
-            color: AppColors.primary.withValues(alpha: 0.1),
-            shape: BoxShape.circle,
-          ),
-          child: Center(
-            child: TweenAnimationBuilder(
-              duration: const Duration(milliseconds: 1500),
-              tween: Tween(begin: 0.0, end: 1.0),
-              builder: (context, double value, child) {
-                return Transform.rotate(
-                  angle: value * 6.28,
-                  child: Icon(
-                    Icons.motorcycle,
-                    size: 60,
-                    color: AppColors.primary,
-                  ),
-                );
-              },
-              onEnd: () {
-                // Restart animation
-              },
-            ),
-          ),
-        ),
-
-        const SizedBox(height: 24),
-
-        Text(
-          'Mencari driver terdekat...',
-          style: TextStyle(
-            fontSize: 18,
-            fontWeight: FontWeight.w600,
-            color: AppColors.textPrimary,
-          ),
-        ),
-
-        const SizedBox(height: 8),
-
-        Text(
-          'Tunggu sebentar, kami sedang mencarikan\ndriver terbaik untuk Anda',
-          textAlign: TextAlign.center,
-          style: TextStyle(fontSize: 14, color: AppColors.textSecondary),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildDriverFoundContent() {
-    return Column(
-      children: [
-        const SizedBox(height: 40),
-
-        // Driver avatar
-        Container(
-          width: 100,
-          height: 100,
-          decoration: BoxDecoration(
-            shape: BoxShape.circle,
-            color: AppColors.primary.withValues(alpha: 0.1),
-            border: Border.all(color: AppColors.primary, width: 3),
-          ),
-          child: ClipRRect(
-            borderRadius: BorderRadius.circular(50),
-            child: Icon(Icons.person, size: 50, color: AppColors.primary),
-          ),
-        ),
-
-        const SizedBox(height: 20),
-
-        // Driver info
-        Obx(
-          () => Text(
-            controller.driverName.value,
-            style: TextStyle(
-              fontSize: 20,
-              fontWeight: FontWeight.bold,
-              color: AppColors.textPrimary,
-            ),
-          ),
-        ),
-
-        const SizedBox(height: 8),
-
-        Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(Icons.star, color: Colors.amber, size: 20),
-            const SizedBox(width: 4),
-            Obx(
-              () => Text(
-                controller.driverRating.value.toString(),
-                style: TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.w500,
-                  color: AppColors.textPrimary,
-                ),
-              ),
-            ),
-          ],
-        ),
-
-        const SizedBox(height: 24),
-
-        // Vehicle info
-        Container(
-          padding: const EdgeInsets.all(16),
-          decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(16),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.grey.withValues(alpha: 0.1),
-                blurRadius: 8,
-                offset: const Offset(0, 2),
-              ),
-            ],
-          ),
-          child: Column(
-            children: [
-              Row(
-                children: [
-                  Icon(Icons.motorcycle, color: AppColors.primary, size: 24),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          'JekMotor',
-                          style: TextStyle(
-                            fontSize: 16,
-                            fontWeight: FontWeight.w600,
-                            color: AppColors.textPrimary,
-                          ),
-                        ),
-                        Obx(
-                          () => Text(
-                            controller.driverPlate.value,
-                            style: TextStyle(
-                              fontSize: 14,
-                              color: AppColors.textSecondary,
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ],
-              ),
-
-              const SizedBox(height: 16),
-
-              Row(
-                children: [
-                  Icon(Icons.access_time, color: AppColors.success, size: 20),
-                  const SizedBox(width: 8),
-                  Obx(
-                    () => Text(
-                      'Tiba dalam ${controller.driverArrivalTime.value} menit',
-                      style: TextStyle(
-                        fontSize: 14,
-                        fontWeight: FontWeight.w500,
-                        color: AppColors.success,
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ],
-          ),
-        ),
-
-        const Spacer(),
-
-        Text(
-          'Driver sedang menuju lokasi Anda',
-          style: TextStyle(fontSize: 16, color: AppColors.textSecondary),
-        ),
-      ],
     );
   }
 
@@ -1154,14 +952,14 @@ class CreateOrderView extends GetView<CreateOrderController> {
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(12),
             side: isSecondary
-                ? BorderSide(color: AppColors.primary)
+                ? const BorderSide(color: AppColors.primary)
                 : BorderSide.none,
           ),
           elevation: isSecondary ? 0 : 2,
         ),
         child: Text(
           text,
-          style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+          style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
         ),
       ),
     );
@@ -1178,9 +976,15 @@ class CreateOrderView extends GetView<CreateOrderController> {
 
   void _selectLocation(String location) {
     if (controller.pickupController.text.isEmpty) {
-      controller.setPickupLocation(location);
+      controller.setPickupLocation(
+        location,
+        controller.pickupLatLng!,
+      ); // Fixed to call setPickupLocation
     } else if (controller.destinationController.text.isEmpty) {
-      controller.setDestinationLocation(location);
+      controller.setDestinationLocation(
+        location,
+        controller.destLatLng!,
+      ); // Fixed to call setDestinationLocation
     }
   }
 
@@ -1197,7 +1001,7 @@ class CreateOrderView extends GetView<CreateOrderController> {
     Get.bottomSheet(
       Container(
         height: 400,
-        decoration: BoxDecoration(
+        decoration: const BoxDecoration(
           color: Colors.white,
           borderRadius: BorderRadius.only(
             topLeft: Radius.circular(20),
@@ -1208,7 +1012,7 @@ class CreateOrderView extends GetView<CreateOrderController> {
           children: [
             Container(
               padding: const EdgeInsets.all(16),
-              decoration: BoxDecoration(
+              decoration: const BoxDecoration(
                 border: Border(bottom: BorderSide(color: AppColors.border)),
               ),
               child: Row(
@@ -1218,7 +1022,7 @@ class CreateOrderView extends GetView<CreateOrderController> {
                       isPickup
                           ? 'Pilih Lokasi Penjemputan'
                           : 'Pilih Lokasi Tujuan',
-                      style: TextStyle(
+                      style: const TextStyle(
                         fontSize: 18,
                         fontWeight: FontWeight.w600,
                         color: AppColors.textPrimary,
@@ -1227,7 +1031,7 @@ class CreateOrderView extends GetView<CreateOrderController> {
                   ),
                   GestureDetector(
                     onTap: () => Get.back(),
-                    child: Icon(Icons.close, size: 24),
+                    child: const Icon(Icons.close, size: 24),
                   ),
                 ],
               ),
@@ -1237,19 +1041,30 @@ class CreateOrderView extends GetView<CreateOrderController> {
                 itemCount: mockLocations.length,
                 itemBuilder: (context, index) {
                   return ListTile(
-                    leading: Icon(Icons.location_on, color: AppColors.primary),
+                    leading: const Icon(
+                      Icons.location_on,
+                      color: AppColors.primary,
+                    ),
                     title: Text(
                       mockLocations[index],
-                      style: TextStyle(
+                      style: const TextStyle(
                         fontSize: 16,
                         color: AppColors.textPrimary,
                       ),
                     ),
                     onTap: () {
                       if (isPickup) {
-                        controller.setPickupLocation(mockLocations[index]);
+                        // Dummy lat/lng for now
+                        controller.setPickupLocation(
+                          mockLocations[index],
+                          controller.pickupLatLng!,
+                        );
                       } else {
-                        controller.setDestinationLocation(mockLocations[index]);
+                        // Dummy lat/lng for now
+                        controller.setDestinationLocation(
+                          mockLocations[index],
+                          controller.destLatLng!,
+                        );
                       }
                       Get.back();
                     },

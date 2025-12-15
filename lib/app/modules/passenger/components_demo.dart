@@ -64,12 +64,12 @@ class _ComponentsDemoState extends State<ComponentsDemo> {
                   padding: const EdgeInsets.symmetric(horizontal: 16),
                   child: RecentHistoryList(
                     history: [
-                      RideRequest(
+                      RideHistoryItem(
                         destinationName: "RITA SuperMall",
                         destinationAddress:
                             "Jl. Jend. Sudirman No.296, Purwokerto",
                       ),
-                      RideRequest(
+                      RideHistoryItem(
                         destinationName: "Universitas Jenderal Soedirman",
                         destinationAddress:
                             "Jl. Profesor DR. HR Boenyamin No.708, Grendeng",

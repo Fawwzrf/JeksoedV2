@@ -61,7 +61,7 @@ class _TripDriverBottomSheetState extends State<TripDriverBottomSheet> {
                 const SizedBox(width: 12),
                 Expanded(
                   child: Text(
-                    passenger?.nama ?? 'Loading...',
+                    passenger?.name ?? 'Loading...',
                     style: const TextStyle(
                       fontSize: 18,
                       fontWeight: FontWeight.bold,
@@ -131,24 +131,26 @@ class _TripDriverBottomSheetState extends State<TripDriverBottomSheet> {
   }
 
   Widget _buildStatusContent(rideRequest) {
+    final formattedPrice = 'Rp${rideRequest.fare}';
+
     switch (rideRequest.status) {
       case 'accepted':
         return _buildActionSection(
-          totalPayment: rideRequest.price ?? 'Rp0',
+          totalPayment: formattedPrice,
           buttonText: 'Geser jika sudah sampai',
           onSlideConfirmed: () => widget.onUpdateStatus('arrived'),
         );
 
       case 'arrived':
         return _buildActionSection(
-          totalPayment: rideRequest.price ?? 'Rp0',
+          totalPayment: formattedPrice,
           buttonText: 'Geser untuk memulai',
           onSlideConfirmed: () => widget.onUpdateStatus('started'),
         );
 
       case 'started':
         return _buildActionSection(
-          totalPayment: rideRequest.price ?? 'Rp0',
+          totalPayment: formattedPrice,
           buttonText: 'Geser jika sudah sampai',
           onSlideConfirmed: () => widget.onUpdateStatus('completed'),
         );

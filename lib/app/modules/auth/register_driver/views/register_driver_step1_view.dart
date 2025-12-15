@@ -8,7 +8,6 @@ import '../../../../../utils/app_constants.dart';
 
 class RegisterDriverStep1View extends GetView<RegisterDriverController> {
   final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
-  final RxString profileImagePath = ''.obs;
 
   RegisterDriverStep1View({super.key});
 
@@ -29,11 +28,7 @@ class RegisterDriverStep1View extends GetView<RegisterDriverController> {
                 children: [
                   Obx(
                     () => GestureDetector(
-                      onTap: () {
-                        // pickProfileImage is not defined on the controller yet;
-                        // implement image picking in the controller and replace this with:
-                        // onTap: controller.pickProfileImage,
-                      },
+                      onTap: controller.pickProfileImage,
                       child: Container(
                         width: 120,
                         height: 120,
@@ -45,7 +40,7 @@ class RegisterDriverStep1View extends GetView<RegisterDriverController> {
                             width: 2,
                           ),
                         ),
-                        child: profileImagePath.value.isEmpty
+                        child: controller.profileImagePath.value.isEmpty
                             ? Icon(
                                 Icons.add_a_photo,
                                 size: 40,
@@ -53,7 +48,7 @@ class RegisterDriverStep1View extends GetView<RegisterDriverController> {
                               )
                             : ClipOval(
                                 child: Image.file(
-                                  File(profileImagePath.value),
+                                  File(controller.profileImagePath.value),
                                   width: 120,
                                   height: 120,
                                   fit: BoxFit.cover,
@@ -86,6 +81,14 @@ class RegisterDriverStep1View extends GetView<RegisterDriverController> {
             ),
 
             const SizedBox(height: 20),
+
+            // NIM Field
+            _buildTextField(
+              controller: controller.nimController,
+              label: 'NIM',
+              hint: 'Enter your NIM',
+              icon: Icons.badge_outlined,
+            ),
 
             // Email Field
             _buildTextField(
@@ -185,6 +188,27 @@ class RegisterDriverStep1View extends GetView<RegisterDriverController> {
             ),
 
             const SizedBox(height: 40),
+
+            // Next Button (Added to ensure flow)
+            SizedBox(
+              width: double.infinity,
+              child: ElevatedButton(
+                onPressed: controller.submitStep1,
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: AppColors.primary,
+                  foregroundColor: Colors.white,
+                  padding: const EdgeInsets.symmetric(vertical: 16),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                ),
+                child: const Text(
+                  'Continue',
+                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                ),
+              ),
+            ),
+            const SizedBox(height: 20),
           ],
         ),
       ),

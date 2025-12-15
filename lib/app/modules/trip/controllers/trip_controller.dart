@@ -241,7 +241,11 @@ class TripController extends GetxController {
 
   void cancelTrip() {
     updateTripStatus('cancelled');
-    Get.offAllNamed(Routes.driverMain);
+    if (uiState.value.isDriver) {
+      Get.offAllNamed(Routes.driverMain);
+    } else {
+      Get.offAllNamed(Routes.passengerMain);
+    }
   }
 
   void confirmPaymentAndFinishTrip() {

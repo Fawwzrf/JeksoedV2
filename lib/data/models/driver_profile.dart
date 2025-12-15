@@ -24,7 +24,7 @@ class DriverProfile {
     final averageRating = ratingCount > 0 ? totalRating / ratingCount : 0.0;
 
     return DriverProfile(
-      name: data['nama'] ?? 'Driver',
+      name: data['name'] ?? 'Driver',
       licensePlate: data['licensePlate'] ?? '',
       photoUrl: data['photoUrl'],
       balance: 'Rp ${data['balance'] ?? 0}',
@@ -35,7 +35,7 @@ class DriverProfile {
 
   Map<String, dynamic> toMap() {
     return {
-      'nama': name,
+      'name': name,
       'licensePlate': licensePlate,
       'photoUrl': photoUrl,
       'balance': int.tryParse(balance.replaceAll(RegExp(r'[^0-9]'), '')) ?? 0,
