@@ -451,7 +451,7 @@ class CreateOrderView extends GetView<CreateOrderController> {
                       final type = vehicle['type'] as String;
                       final name = vehicle['name'] as String;
                       final icon = vehicle['icon'] as IconData;
-                      final pricePerKm = vehicle['pricePerKm'] as int;
+                      final pricePerKm = (vehicle['pricePerKm'] ?? 0) as int;
                       final description = vehicle['description'] as String;
                       final isSelected =
                           controller.selectedVehicleType.value == type;
@@ -645,21 +645,22 @@ class CreateOrderView extends GetView<CreateOrderController> {
     required Color iconColor,
     required String label,
     required String hint,
-    required TextEditingController controller,
+    required TextEditingController
+    controller, // Controller ini yang akan kita dengarkan
     required VoidCallback onTap,
   }) {
     return GestureDetector(
       onTap: onTap,
       child: Container(
-        padding: const EdgeInsets.all(16),
+        padding: const EdgeInsets.all(12),
         decoration: BoxDecoration(
-          color: AppColors.surface,
-          borderRadius: BorderRadius.circular(12),
+          color: AppColors.background,
+          borderRadius: BorderRadius.circular(8),
           border: Border.all(color: AppColors.border),
         ),
         child: Row(
           children: [
-            Icon(icon, color: iconColor, size: 20),
+            Icon(icon, color: iconColor),
             const SizedBox(width: 12),
             Expanded(
               child: Column(
@@ -667,29 +668,29 @@ class CreateOrderView extends GetView<CreateOrderController> {
                 children: [
                   Text(
                     label,
-                    style: const TextStyle(
-                      fontSize: 12,
-                      color: AppColors.textSecondary,
-                      fontWeight: FontWeight.w500,
-                    ),
+                    style: const TextStyle(fontSize: 12, color: Colors.grey),
                   ),
-                  const SizedBox(height: 2),
-                  Text(
-                    controller.text.isEmpty ? hint : controller.text,
-                    style: TextStyle(
-                      fontSize: 14,
-                      color: controller.text.isEmpty
-                          ? AppColors.textHint
-                          : AppColors.textPrimary,
-                    ),
+                  // PERBAIKAN DI SINI: Bungkus Text dengan ValueListenableBuilder
+                  ValueListenableBuilder<TextEditingValue>(
+                    valueListenable: controller,
+                    builder: (context, value, child) {
+                      return Text(
+                        value.text.isEmpty ? hint : value.text,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: TextStyle(
+                          fontSize: 14,
+                          // Ubah warna teks jadi hitam jika ada isinya
+                          color: value.text.isEmpty
+                              ? Colors.grey
+                              : Colors.black,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      );
+                    },
                   ),
                 ],
               ),
-            ),
-            const Icon(
-              Icons.keyboard_arrow_right,
-              size: 20,
-              color: AppColors.textSecondary,
             ),
           ],
         ),
@@ -975,26 +976,31 @@ class CreateOrderView extends GetView<CreateOrderController> {
   }
 
   void _selectLocation(String location) {
-    if (controller.pickupController.text.isEmpty) {
-      controller.setPickupLocation(
+    final currentPickup = controller.pickupLatLng;
+    final currentDest = controller.destLatLng;
+    if (controller.pickupController.text.isEmpty && currentPickup != null) {
+      controller.setPickupLocation(location, currentPickup);
+    } else if (controller.destinationController.text.isEmpty &&
+        currentDest != null) {
+      controller.setDestinationLocation(location, currentDest);
+    } else {
+      controller.searchLocationFromText(
         location,
-        controller.pickupLatLng!,
-      ); // Fixed to call setPickupLocation
-    } else if (controller.destinationController.text.isEmpty) {
-      controller.setDestinationLocation(
-        location,
-        controller.destLatLng!,
-      ); // Fixed to call setDestinationLocation
+        controller.pickupController.text.isEmpty,
+      );
     }
   }
 
   void _showLocationPicker(bool isPickup) {
     final TextEditingController searchController = TextEditingController();
+    final FocusNode focusNode = FocusNode(); // 1. Buat FocusNode
+
+    // Reset hasil pencarian sebelumnya
+    controller.searchResults.clear();
 
     Get.bottomSheet(
       Container(
-        // Sesuaikan tinggi agar keyboard tidak menutupi
-        height: Get.height * 0.8,
+        height: Get.height * 0.9, // Hampir full screen agar keyboard muat
         decoration: const BoxDecoration(
           color: Colors.white,
           borderRadius: BorderRadius.only(
@@ -1004,6 +1010,7 @@ class CreateOrderView extends GetView<CreateOrderController> {
         ),
         child: Column(
           children: [
+            // --- HEADER ---
             Container(
               padding: const EdgeInsets.all(16),
               decoration: const BoxDecoration(
@@ -1013,104 +1020,163 @@ class CreateOrderView extends GetView<CreateOrderController> {
                 children: [
                   Expanded(
                     child: Text(
-                      isPickup
-                          ? 'Cari Lokasi Penjemputan'
-                          : 'Cari Lokasi Tujuan',
+                      isPickup ? 'Cari Lokasi Jemput' : 'Cari Lokasi Tujuan',
                       style: const TextStyle(
                         fontSize: 18,
-                        fontWeight: FontWeight.w600,
-                        color: AppColors.textPrimary,
+                        fontWeight: FontWeight.bold,
                       ),
                     ),
                   ),
                   GestureDetector(
                     onTap: () => Get.back(),
-                    child: const Icon(Icons.close, size: 24),
+                    child: const Icon(Icons.close),
                   ),
                 ],
               ),
             ),
 
-            // --- KOLOM PENCARIAN BARU ---
+            // --- INPUT FIELD ---
             Padding(
               padding: const EdgeInsets.all(16.0),
               child: TextField(
                 controller: searchController,
+                focusNode: focusNode, // 2. Pasang FocusNode
+                autofocus: true,
                 textInputAction: TextInputAction.search,
-                autofocus: true, // Langsung fokus agar keyboard muncul
+                onChanged: (val) {
+                  // 3. Panggil fungsi pencarian realtime
+                  controller.onSearchTextChanged(val);
+                },
                 decoration: InputDecoration(
-                  hintText: "Ketik nama tempat (contoh: Unsoed)",
-                  prefixIcon: const Icon(Icons.search),
+                  hintText: "Cari nama tempat, jalan, atau area...",
+                  prefixIcon: const Icon(
+                    Icons.search,
+                    color: AppColors.primary,
+                  ),
+                  filled: true,
+                  fillColor: Colors.grey[100],
                   border: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(12),
+                    borderSide: BorderSide.none,
                   ),
-                  suffixIcon: IconButton(
-                    icon: const Icon(Icons.arrow_forward),
-                    onPressed: () {
-                      // Panggil fungsi pencarian di controller saat tombol panah ditekan
-                      controller.searchLocationFromText(
-                        searchController.text,
-                        isPickup,
-                      );
-                    },
+                  contentPadding: const EdgeInsets.symmetric(
+                    horizontal: 16,
+                    vertical: 14,
                   ),
                 ),
-                onSubmitted: (value) {
-                  // Panggil fungsi pencarian di controller saat tekan Enter/Search di keyboard
-                  controller.searchLocationFromText(value, isPickup);
-                },
               ),
             ),
-            // -----------------------------
 
-            // Loading Indicator saat mencari
-            Obx(
-              () => controller.isLoading.value
-                  ? const LinearProgressIndicator(color: AppColors.primary)
-                  : const SizedBox.shrink(),
-            ),
-
+            // --- HASIL PENCARIAN (LIST) ---
             Expanded(
-              child: ListView(
-                padding: const EdgeInsets.symmetric(horizontal: 16),
-                children: [
-                  const Padding(
-                    padding: EdgeInsets.symmetric(vertical: 8.0),
-                    child: Text(
-                      "Saran Cepat:",
-                      style: TextStyle(color: Colors.grey),
-                    ),
-                  ),
-                  // Mock locations tetap ada sebagai opsi cepat
-                  ...[
-                    'Universitas Jenderal Soedirman',
-                    'Terminal Purwokerto',
-                    'Alun-alun Purwokerto',
-                    'Stasiun Purwokerto',
-                    'RITA SuperMall Purwokerto',
-                  ].map((locationName) {
-                    return ListTile(
-                      leading: const Icon(
-                        Icons.history,
-                        color: AppColors.textSecondary,
+              child: Obx(() {
+                // Tampilkan Loading
+                if (controller.isSearchingLocation.value) {
+                  return const Center(
+                    child: CircularProgressIndicator(color: AppColors.primary),
+                  );
+                }
+
+                // Tampilkan Hasil Pencarian API
+                if (controller.searchResults.isNotEmpty) {
+                  return ListView.separated(
+                    itemCount: controller.searchResults.length,
+                    separatorBuilder: (context, index) =>
+                        const Divider(height: 1),
+                    itemBuilder: (context, index) {
+                      // PERBAIKAN: Gunakan properti dari PlaceResult (title & subtitle)
+                      // Tidak perlu format manual lagi karena sudah dilakukan di Controller
+                      final place = controller.searchResults[index];
+
+                      return ListTile(
+                        leading: const Icon(
+                          Icons.location_on_outlined,
+                          color: Colors.grey,
+                        ),
+                        title: Text(
+                          place.title, // Langsung pakai title
+                          style: const TextStyle(fontWeight: FontWeight.w600),
+                        ),
+                        subtitle: Text(
+                          place.subtitle, // Langsung pakai subtitle
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                        onTap: () {
+                          // Pilih lokasi ini
+                          controller.selectLocationFromSuggestion(
+                            place,
+                            isPickup,
+                          );
+                        },
+                      );
+                    },
+                  );
+                }
+
+                // Tampilkan Saran Default (Jika belum mengetik)
+                return ListView(
+                  children: [
+                    if (searchController.text.isEmpty) ...[
+                      const Padding(
+                        padding: EdgeInsets.symmetric(
+                          horizontal: 16,
+                          vertical: 8,
+                        ),
+                        child: Text(
+                          "Saran Cepat",
+                          style: TextStyle(
+                            color: Colors.grey,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
                       ),
-                      title: Text(locationName),
-                      onTap: () {
-                        // Saat saran diklik, kita juga lakukan pencarian koordinat real-nya
-                        controller.searchLocationFromText(
-                          locationName,
-                          isPickup,
-                        );
-                      },
-                    );
-                  }),
-                ],
-              ),
+                      _buildQuickSuggestion(
+                        "Universitas Jenderal Soedirman",
+                        isPickup,
+                      ),
+                      _buildQuickSuggestion(
+                        "Terminal Bulupitu Purwokerto",
+                        isPickup,
+                      ),
+                      _buildQuickSuggestion("Stasiun Purwokerto", isPickup),
+                      _buildQuickSuggestion("RITA SuperMall", isPickup),
+                    ] else ...[
+                      // Jika mengetik tapi tidak ada hasil
+                      const Padding(
+                        padding: EdgeInsets.all(20),
+                        child: Center(child: Text("Lokasi tidak ditemukan :(")),
+                      ),
+                    ],
+                  ],
+                );
+              }),
             ),
           ],
         ),
       ),
       isScrollControlled: true,
+    ).then((_) {
+      // Cleanup saat bottom sheet ditutup
+      focusNode.dispose();
+    });
+    Future.delayed(const Duration(milliseconds: 500), () {
+      if (focusNode.canRequestFocus) {
+        focusNode.requestFocus();
+      }
+    });
+  }
+
+  Widget _buildQuickSuggestion(String name, bool isPickup) {
+    return ListTile(
+      leading: const Icon(Icons.history, color: Colors.grey),
+      title: Text(name),
+      onTap: () {
+        // Cari lokasi berdasarkan nama hardcoded
+        controller.onSearchTextChanged(name);
+        // Atau bisa langsung set jika tau koordinatnya (tapi biar konsisten pakai search aja)
+        controller.searchLocationFromText(name, isPickup);
+      },
     );
   }
 }
