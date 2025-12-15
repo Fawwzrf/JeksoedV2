@@ -2,8 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:supabase_flutter/supabase_flutter.dart' as sb;
 import 'dart:io';
-import '../../../app/routes/app_pages.dart';
-import '../../../utils/app_colors.dart';
 import '../../../utils/app_constants.dart';
 import '../models/user.dart';
 
@@ -95,7 +93,7 @@ class AuthService extends GetxService {
 
       // 1. Sign Up Auth
       final response = await _supabase.auth.signUp(
-        email: email,
+        email: email.trim(),
         password: password,
         data: {'name': name, 'nim': nim},
       );

@@ -96,7 +96,7 @@ class ChatController extends GetxController {
                   .map((e) => Map<String, dynamic>.from(e))
                   .toList();
 
-              DateTime _toDate(dynamic v) {
+              DateTime toDate(dynamic v) {
                 if (v == null) return DateTime.fromMillisecondsSinceEpoch(0);
                 if (v is DateTime) return v;
                 if (v is int) return DateTime.fromMillisecondsSinceEpoch(v);
@@ -120,7 +120,7 @@ class ChatController extends GetxController {
                 // normalisasi timestamp --> createdAt (DateTime)
                 final createdRaw =
                     m['created_at'] ?? m['createdAt'] ?? m['ts'] ?? m['time'];
-                m['createdAt'] = _toDate(createdRaw);
+                m['createdAt'] = toDate(createdRaw);
 
                 // normalisasi nama field lain yang sering berbeda
                 if (m.containsKey('image_url')) m['imageUrl'] = m['image_url'];

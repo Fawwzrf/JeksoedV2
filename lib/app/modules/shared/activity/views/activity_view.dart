@@ -38,19 +38,17 @@ class ActivityView extends GetView<ActivityController> {
           // Tabs
           Container(
             color: Colors.white,
-            child: Obx(
-              () => TabBar(
-                controller: _getTabController(context),
-                indicatorColor: AppColors.primaryGreen,
-                labelColor: AppColors.primaryGreen,
-                unselectedLabelColor: Colors.grey,
-                tabs: const [
-                  Tab(text: 'Semua'),
-                  Tab(text: 'Selesai'),
-                  Tab(text: 'Dibatalkan'),
-                ],
-                onTap: controller.onTabSelected,
-              ),
+            child: TabBar(
+              controller: _getTabController(context),
+              indicatorColor: AppColors.primaryGreen,
+              labelColor: AppColors.primaryGreen,
+              unselectedLabelColor: Colors.grey,
+              tabs: const [
+                Tab(text: 'Semua'),
+                Tab(text: 'Selesai'),
+                Tab(text: 'Dibatalkan'),
+              ],
+              onTap: controller.onTabSelected,
             ),
           ),
 

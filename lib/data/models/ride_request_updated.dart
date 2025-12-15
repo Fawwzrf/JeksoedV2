@@ -81,7 +81,7 @@ class RideRequest {
   factory RideRequest.fromJson(Map<String, dynamic> json) {
     final m = Map<String, dynamic>.from(json);
 
-    double? _toDouble(dynamic x) {
+    double? toDouble(dynamic x) {
       if (x == null) return null;
       if (x is double) return x;
       if (x is int) return x.toDouble();
@@ -92,18 +92,18 @@ class RideRequest {
       id: (m['id'] ?? m['ride_id'] ?? m['request_id'] ?? '').toString(),
       passengerId: (m['passenger_id'] ?? m['passengerId'])?.toString(),
       driverId: (m['driver_id'] ?? m['driverId'])?.toString(),
-      pickupLat: _toDouble(m['pickup_lat'] ?? m['pickupLat']),
-      pickupLng: _toDouble(m['pickup_lng'] ?? m['pickupLng']),
+      pickupLat: toDouble(m['pickup_lat'] ?? m['pickupLat']),
+      pickupLng: toDouble(m['pickup_lng'] ?? m['pickupLng']),
       pickupAddress: (m['pickup_address'] ?? m['pickupAddress'])?.toString(),
-      destLat: _toDouble(m['dest_lat'] ?? m['destLat']),
-      destLng: _toDouble(m['dest_lng'] ?? m['destLng']),
+      destLat: toDouble(m['dest_lat'] ?? m['destLat']),
+      destLng: toDouble(m['dest_lng'] ?? m['destLng']),
       destAddress: (m['dest_address'] ?? m['destAddress'])?.toString(),
       rideType: (m['ride_type'] ?? m['rideType'])?.toString(),
       paymentMethod: (m['payment_method'] ?? m['paymentMethod'])?.toString(),
       status: (m['status'] ?? 'requested').toString(),
-      fare: _toDouble(m['fare']),
-      distance: _toDouble(m['distance']),
-      duration: _toDouble(m['duration']),
+      fare: toDouble(m['fare']),
+      distance: toDouble(m['distance']),
+      duration: toDouble(m['duration']),
       notes: (m['notes'] ?? m['note'])?.toString(),
       createdAt: _parseDate(
         m['created_at'] ?? m['createdAt'] ?? m['createdAtIso'],

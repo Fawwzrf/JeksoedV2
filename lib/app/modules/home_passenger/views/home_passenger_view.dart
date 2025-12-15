@@ -5,7 +5,7 @@ import '../../../../../utils/app_colors.dart';
 import '../../passenger/components/components.dart';
 
 class HomePassengerView extends GetView<HomePassengerController> {
-  const HomePassengerView({Key? key}) : super(key: key);
+  const HomePassengerView({super.key});
 
   @override
   Widget build(BuildContext context) {

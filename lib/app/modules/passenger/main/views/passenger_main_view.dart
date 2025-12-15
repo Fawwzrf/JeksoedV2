@@ -7,7 +7,7 @@ import '../../../shared/profile/views/profile_view.dart';
 import '../../../../../utils/app_colors.dart';
 
 class PassengerMainView extends GetView<PassengerMainController> {
-  const PassengerMainView({Key? key}) : super(key: key);
+  const PassengerMainView({super.key});
 
   @override
   Widget build(BuildContext context) {

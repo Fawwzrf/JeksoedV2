@@ -1,5 +1,6 @@
 // filepath: lib/data/models/message.dart
 
+import 'package:supabase_flutter/supabase_flutter.dart';
 
 class Message {
   final String id;

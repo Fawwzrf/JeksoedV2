@@ -95,44 +95,44 @@ class PreviewNavigationController extends GetxController {
 }
 
 class PreviewHelper {
-  static void showPreviewInfo() {
-    Get.dialog(
-      AlertDialog(
-        title: Text("🎭 Mode Preview"),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text("Aplikasi dalam mode preview. Gunakan data berikut:"),
-            SizedBox(height: 16),
-            Text(
-              "📧 Login Penumpang:",
-              style: TextStyle(fontWeight: FontWeight.bold),
-            ),
-            Text("Email: passenger@jeksoed.com"),
-            Text("Password: apapun"),
-            SizedBox(height: 12),
-            Text(
-              "🚗 Login Driver:",
-              style: TextStyle(fontWeight: FontWeight.bold),
-            ),
-            Text("Email: driver@jeksoed.com"),
-            Text("Password: apapun"),
-            SizedBox(height: 12),
-            Text(
-              "✨ Fitur yang bisa ditest:",
-              style: TextStyle(fontWeight: FontWeight.bold),
-            ),
-            Text("• Login & Register"),
-            Text("• Navigasi antar halaman"),
-            Text("• UI semua komponen"),
-            Text("• Mock data trip & activity"),
-          ],
-        ),
-        actions: [
-          TextButton(onPressed: () => Get.back(), child: Text("Mengerti")),
-        ],
-      ),
-    );
-  }
+  // static void showPreviewInfo() {
+  //   Get.dialog(
+  //     AlertDialog(
+  //       title: Text("🎭 Mode Preview"),
+  //       content: Column(
+  //         mainAxisSize: MainAxisSize.min,
+  //         crossAxisAlignment: CrossAxisAlignment.start,
+  //         children: [
+  //           Text("Aplikasi dalam mode preview. Gunakan data berikut:"),
+  //           SizedBox(height: 16),
+  //           Text(
+  //             "📧 Login Penumpang:",
+  //             style: TextStyle(fontWeight: FontWeight.bold),
+  //           ),
+  //           Text("Email: passenger@jeksoed.com"),
+  //           Text("Password: apapun"),
+  //           SizedBox(height: 12),
+  //           Text(
+  //             "🚗 Login Driver:",
+  //             style: TextStyle(fontWeight: FontWeight.bold),
+  //           ),
+  //           Text("Email: driver@jeksoed.com"),
+  //           Text("Password: apapun"),
+  //           SizedBox(height: 12),
+  //           Text(
+  //             "✨ Fitur yang bisa ditest:",
+  //             style: TextStyle(fontWeight: FontWeight.bold),
+  //           ),
+  //           Text("• Login & Register"),
+  //           Text("• Navigasi antar halaman"),
+  //           Text("• UI semua komponen"),
+  //           Text("• Mock data trip & activity"),
+  //         ],
+  //       ),
+  //       actions: [
+  //         TextButton(onPressed: () => Get.back(), child: Text("Mengerti")),
+  //       ],
+  //     ),
+  //   );
+  // }
 }

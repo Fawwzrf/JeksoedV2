@@ -5,7 +5,7 @@ import '../controllers/create_order_controller.dart';
 import '../../../../../utils/app_colors.dart';
 
 class CreateOrderView extends GetView<CreateOrderController> {
-  const CreateOrderView({Key? key}) : super(key: key);
+  const CreateOrderView({super.key});
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -199,9 +199,7 @@ class CreateOrderView extends GetView<CreateOrderController> {
             ],
           ),
           child: Obx(() {
-            final canContinue =
-                controller.pickupController.text.isNotEmpty &&
-                controller.destinationController.text.isNotEmpty;
+            final canContinue = controller.isFormValid.value;
 
             return _buildActionButton(
               text: 'Lanjutkan',

@@ -27,11 +27,15 @@ class RegisterPassengerController extends GetxController {
     try {
       isLoading.value = true;
 
+      final emailBersih = emailC.text.trim();
+      print("DEBUG: Email Original: '${emailC.text}'");
+      print("DEBUG: Email Dikirim : '$emailBersih'");
+
       final success = await AuthService.to.registerPassenger(
-        name: nameC.text,
-        nim: nimC.text,
-        email: emailC.text,
-        phone: phoneC.text,
+        name: nameC.text.trim(),
+        nim: nimC.text.trim(),
+        email: emailBersih,
+        phone: phoneC.text.trim(),
         password: passwordC.text,
       );
 

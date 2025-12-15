@@ -9,6 +9,7 @@ class CreateOrderController extends GetxController {
   final notesController = TextEditingController();
 
   final isLoading = false.obs;
+  final isFormValid = false.obs;
   final currentStage = OrderStage.search.obs;
   final selectedVehicleType = ''.obs;
   final estimatedPrice = 0.0.obs;
@@ -45,6 +46,14 @@ class CreateOrderController extends GetxController {
     if (vehicleTypes.isNotEmpty) {
       selectedVehicleType.value = vehicleTypes[0]['type'] as String;
     }
+    pickupController.addListener(_validateSearchForm);
+    destinationController.addListener(_validateSearchForm);
+  }
+
+  void _validateSearchForm() {
+    isFormValid.value =
+        pickupController.text.isNotEmpty &&
+        destinationController.text.isNotEmpty;
   }
 
   // Stage navigation methods
@@ -192,6 +201,8 @@ class CreateOrderController extends GetxController {
 
   @override
   void onClose() {
+    pickupController.removeListener(_validateSearchForm);
+    destinationController.removeListener(_validateSearchForm);
     pickupController.dispose();
     destinationController.dispose();
     notesController.dispose();

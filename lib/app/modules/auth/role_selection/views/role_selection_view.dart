@@ -3,7 +3,7 @@ import 'package:get/get.dart';
 import '../controllers/role_selection_controller.dart';
 
 class RoleSelectionView extends GetView<RoleSelectionController> {
-  const RoleSelectionView({Key? key}) : super(key: key);
+  const RoleSelectionView({super.key});
 
   @override
   Widget build(BuildContext context) {
