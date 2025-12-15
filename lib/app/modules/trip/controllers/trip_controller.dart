@@ -7,6 +7,7 @@ import '../../../../data/models/ride_request.dart';
 import '../../../../data/models/user_model.dart';
 import '../../../routes/app_pages.dart';
 import 'package:google_polyline_algorithm/google_polyline_algorithm.dart';
+import 'package:flutter/material.dart';
 
 sealed class TripNavEvent {
   static const navigateToHome = 'navigateToHome';
@@ -19,12 +20,14 @@ class TripUiState {
   final List<LatLng> dynamicPolylinePoints;
   final bool isDriver;
   final UserModel? otherUser;
+  final bool isUpdating;
 
   TripUiState({
     this.rideRequest,
     this.dynamicPolylinePoints = const [],
     this.isDriver = false,
     this.otherUser,
+    this.isUpdating = false,
   });
 
   TripUiState copyWith({
@@ -32,6 +35,7 @@ class TripUiState {
     List<LatLng>? dynamicPolylinePoints,
     bool? isDriver,
     UserModel? otherUser,
+    bool? isUpdating,
   }) {
     return TripUiState(
       rideRequest: rideRequest ?? this.rideRequest,
@@ -39,6 +43,7 @@ class TripUiState {
           dynamicPolylinePoints ?? this.dynamicPolylinePoints,
       isDriver: isDriver ?? this.isDriver,
       otherUser: otherUser ?? this.otherUser,
+      isUpdating: isUpdating ?? this.isUpdating,
     );
   }
 }
@@ -228,15 +233,38 @@ class TripController extends GetxController {
         .catchError((error) => print('Error updating loc: $error'));
   }
 
-  void updateTripStatus(String newStatus) {
+  Future<void> updateTripStatus(String newStatus) async {
     if (rideRequestId.isEmpty) return;
 
-    final updateData = <String, dynamic>{'status': newStatus};
-    if (newStatus == 'completed') {
-      updateData['completed_at'] = DateTime.now().toIso8601String();
-    }
+    // 1. Set Loading
+    uiState.value = uiState.value.copyWith(isUpdating: true);
 
-    _supabase.from("ride_requests").update(updateData).eq('id', rideRequestId);
+    try {
+      final updateData = <String, dynamic>{'status': newStatus};
+      if (newStatus == 'completed') {
+        updateData['completed_at'] = DateTime.now().toIso8601String();
+      }
+
+      // 2. Tunggu proses update database
+      await _supabase
+          .from("ride_requests")
+          .update(updateData)
+          .eq('id', rideRequestId);
+
+      // Jika berhasil, UI akan otomatis update via Stream listener
+    } catch (e) {
+      // 3. Handle Error (Tampilkan pesan)
+      print("Gagal update status: $e");
+      Get.snackbar(
+        "Gagal",
+        "Gagal mengupdate status. Periksa koneksi internet.",
+        backgroundColor: Colors.red,
+        colorText: Colors.white,
+      );
+    } finally {
+      // 4. Matikan Loading (Apapun yang terjadi, tombol harus reset)
+      uiState.value = uiState.value.copyWith(isUpdating: false);
+    }
   }
 
   void cancelTrip() {

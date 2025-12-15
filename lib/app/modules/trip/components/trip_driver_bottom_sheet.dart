@@ -130,28 +130,36 @@ class _TripDriverBottomSheetState extends State<TripDriverBottomSheet> {
     );
   }
 
-  Widget _buildStatusContent(rideRequest) {
+  Widget _buildStatusContent(dynamic rideRequest) {
     final formattedPrice = 'Rp${rideRequest.fare}';
+    final isLoading = widget.uiState.isUpdating; // Ambil status loading
 
     switch (rideRequest.status) {
       case 'accepted':
         return _buildActionSection(
+          // PENTING: Key unik agar widget di-rebuild ulang saat status berubah
+          key: const ValueKey('btn_arrived'),
           totalPayment: formattedPrice,
           buttonText: 'Geser jika sudah sampai',
+          isLoading: isLoading,
           onSlideConfirmed: () => widget.onUpdateStatus('arrived'),
         );
 
       case 'arrived':
         return _buildActionSection(
+          key: const ValueKey('btn_started'),
           totalPayment: formattedPrice,
           buttonText: 'Geser untuk memulai',
+          isLoading: isLoading,
           onSlideConfirmed: () => widget.onUpdateStatus('started'),
         );
 
       case 'started':
         return _buildActionSection(
+          key: const ValueKey('btn_completed'),
           totalPayment: formattedPrice,
           buttonText: 'Geser jika sudah sampai',
+          isLoading: isLoading,
           onSlideConfirmed: () => widget.onUpdateStatus('completed'),
         );
 
@@ -161,11 +169,14 @@ class _TripDriverBottomSheetState extends State<TripDriverBottomSheet> {
   }
 
   Widget _buildActionSection({
+    required Key key, // Tambahkan parameter Key
     required String totalPayment,
     required String buttonText,
+    required bool isLoading, // Tambahkan parameter isLoading
     required VoidCallback onSlideConfirmed,
   }) {
     return Column(
+      key: key, // Pasang key di sini
       children: [
         Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -181,7 +192,12 @@ class _TripDriverBottomSheetState extends State<TripDriverBottomSheet> {
           ],
         ),
         const SizedBox(height: 16),
-        SlideToConfirmButton(text: buttonText, onConfirmed: onSlideConfirmed),
+        // Pass isLoading ke tombol
+        SlideToConfirmButton(
+          text: buttonText,
+          isLoading: isLoading,
+          onConfirmed: onSlideConfirmed,
+        ),
       ],
     );
   }
