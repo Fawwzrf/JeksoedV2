@@ -5,164 +5,165 @@ import '../../../../../utils/app_colors.dart';
 import '../../passenger/components/components.dart';
 
 class HomePassengerView extends GetView<HomePassengerController> {
-  const HomePassengerView({super.key});
-
-  @override
+  const HomePassengerView({super.key});  @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: const Color(0xFFFFFBEB),
-      body: RefreshIndicator(
-        onRefresh: controller.refreshData,
-        child: SingleChildScrollView(
-          physics: const AlwaysScrollableScrollPhysics(),
-          child: Column(
-            children: [
-              // --- TOP HEADER ---
-              _buildTopHeader(),
-
-              // --- MAIN CONTENT ---
-              Transform.translate(
-                offset: const Offset(0, -20),
-                child: Container(
-                  decoration: const BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.only(
-                      topLeft: Radius.circular(24),
-                      topRight: Radius.circular(24),
-                    ),
-                  ),
-                  padding: const EdgeInsets.all(16),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      // Search Bar
-                      _buildSearchBar(),
-                      const SizedBox(height: 24),
-
-                      // Category Grid - Using converted component
-                      const Text(
-                        "Kategori",
-                        style: TextStyle(
-                          fontSize: 18,
-                          fontWeight: FontWeight.bold,
-                        ),
+      body: Stack(
+        children: [
+          // Main Content
+          CustomScrollView(
+            physics: const AlwaysScrollableScrollPhysics(),
+            slivers: [
+              // Top Header dengan gambar
+              SliverToBoxAdapter(
+                child: _buildTopHeader(),
+              ),
+              
+              // Main Content dalam Card putih
+              SliverToBoxAdapter(
+                child: Transform.translate(
+                  offset: const Offset(0, -24),
+                  child: Container(
+                    decoration: const BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.only(
+                        topLeft: Radius.circular(24),
+                        topRight: Radius.circular(24),
                       ),
-                      const SizedBox(height: 16),
-                      CategoryGrid(onCategoryClick: controller.onCategoryClick),
-                      const SizedBox(height: 32),
-
-                      // Recommendation Section - Using converted component
-                      const RecommendationSection(),
-                      const SizedBox(height: 32),
-
-                      // Recent History Section - Using converted component
-                      _buildRecentHistoryWithComponent(),
-                      const SizedBox(height: 100), // Bottom padding
-                    ],
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const SizedBox(height: 16),
+                        
+                        // Search Bar
+                        Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 16),
+                          child: _buildSearchBar(),
+                        ),
+                        
+                        const SizedBox(height: 20),
+                        
+                        // Category Section
+                        Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 16),
+                          child: CategoryGrid(onCategoryClick: controller.onCategoryClick),
+                        ),
+                        
+                        const SizedBox(height: 32),
+                        
+                        // Recommendation Section
+                        const Padding(
+                          padding: EdgeInsets.symmetric(horizontal: 16),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                "Cari berbagai rekomendasi tempat & kegiatan seru di Purwokerto!",
+                                style: TextStyle(
+                                  fontSize: 14,
+                                  color: Colors.grey,
+                                ),
+                              ),
+                              SizedBox(height: 16),
+                              RecommendationSection(),
+                            ],
+                          ),
+                        ),
+                        
+                        const SizedBox(height: 32),
+                        
+                        // Recent History Section
+                        Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 16),
+                          child: _buildRecentHistoryWithComponent(),
+                        ),
+                        
+                        const SizedBox(height: 100), // Bottom padding
+                      ],
+                    ),
                   ),
                 ),
               ),
             ],
           ),
-        ),
+        ],
       ),
     );
-  }
-
-  Widget _buildTopHeader() {
-    return Stack(
-      children: [
-        Container(
-          height: 200,
-          width: double.infinity,
-          decoration: const BoxDecoration(
-            image: DecorationImage(
-              image: AssetImage('assets/images/home_bg.png'),
+  }  Widget _buildTopHeader() {
+    return SizedBox(
+      height: 240,
+      child: Stack(
+        children: [
+          // Background Image
+          Positioned.fill(
+            child: Image.asset(
+              'assets/images/home_bg.png',
               fit: BoxFit.cover,
             ),
           ),
-        ),
-        Positioned(
-          top: 50,
-          left: 20,
-          right: 20,
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Obx(
-                () => Text(
-                  "Halo, ${controller.userName.value}!",
-                  style: const TextStyle(
-                    fontSize: 24,
-                    fontWeight: FontWeight.bold,
-                    color: Colors.white,
+          
+          // Header Content
+          SafeArea(
+            child: Padding(
+              padding: const EdgeInsets.only(
+                left: 16,
+                right: 16,
+                top: 48,
+                bottom: 16,
+              ),
+              child: Align(
+                alignment: Alignment.topLeft,
+                child: Obx(
+                  () => Text(
+                    "Halo, ${controller.userName.value}!",
+                    style: const TextStyle(
+                      fontSize: 32,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.black,
+                    ),
                   ),
                 ),
               ),
-              Stack(
-                children: [
-                  IconButton(
-                    icon: const Icon(
-                      Icons.notifications_outlined,
-                      color: Colors.white,
-                      size: 28,
-                    ),
-                    onPressed: controller.onNotificationClick,
-                  ),
-                  Obx(
-                    () => controller.hasNotification.value
-                        ? Positioned(
-                            right: 8,
-                            top: 8,
-                            child: Container(
-                              padding: const EdgeInsets.all(4),
-                              decoration: const BoxDecoration(
-                                color: Colors.red,
-                                shape: BoxShape.circle,
-                              ),
-                              constraints: const BoxConstraints(
-                                minWidth: 16,
-                                minHeight: 16,
-                              ),
-                            ),
-                          )
-                        : const SizedBox.shrink(),
-                  ),
-                ],
-              ),
-            ],
+            ),
           ),
-        ),
-      ],
+        ],
+      ),
     );
-  }
-
-  Widget _buildSearchBar() {
+  }  Widget _buildSearchBar() {
     return GestureDetector(
       onTap: controller.onSearchClick,
       child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+        height: 54,
+        padding: const EdgeInsets.symmetric(horizontal: 16),
         decoration: BoxDecoration(
-          color: Colors.grey[100],
+          color: Colors.white,
           borderRadius: BorderRadius.circular(50),
           boxShadow: [
             BoxShadow(
-              color: Colors.grey.withValues(alpha: 0.2),
-              blurRadius: 8,
-              offset: const Offset(0, 2),
+              color: Colors.black.withOpacity(0.08),
+              blurRadius: 12,
+              offset: const Offset(0, 4),
             ),
           ],
         ),
-        child: const Row(
+        child: Row(
           children: [
-            Icon(Icons.search, color: Colors.grey),
-            SizedBox(width: 12),
-            Text(
-              "Mau ke mana hari ini?",
-              style: TextStyle(color: Colors.grey, fontSize: 16),
+            const Expanded(
+              child: Text(
+                "Mau ke mana hari ini?",
+                style: TextStyle(
+                  color: Colors.grey,
+                  fontSize: 16,
+                ),
+              ),
             ),
-            Spacer(),
-            Icon(Icons.location_on_outlined, color: Colors.grey),
+            const Icon(
+              Icons.search,
+              color: Colors.grey,
+              size: 24,
+            ),
           ],
         ),
       ),

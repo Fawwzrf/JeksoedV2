@@ -11,7 +11,6 @@ class HomeDriverView extends GetView<HomeDriverController> {
     return Scaffold(
       body: Stack(
         children: [
-          // 1. Google Maps
           Obx(
             () => GoogleMap(
               initialCameraPosition: CameraPosition(
@@ -24,7 +23,6 @@ class HomeDriverView extends GetView<HomeDriverController> {
             ),
           ),
 
-          // 2. Status Indicator (Top Center)
           Align(
             alignment: Alignment.topCenter,
             child: Padding(

@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import '../../../../../utils/app_colors.dart';
 
 class Category {
   final String name;
@@ -53,75 +52,121 @@ class CategoryItem extends StatelessWidget {
   final VoidCallback onClick;
 
   const CategoryItem({super.key, required this.category, required this.onClick});
-
   @override
   Widget build(BuildContext context) {
     return GestureDetector(
       onTap: onClick,
       child: Column(
+        mainAxisSize: MainAxisSize.min,
         children: [
           Stack(
+            clipBehavior: Clip.none,
             children: [
-              Container(
-                width: 60,
-                height: 60,
-                decoration: BoxDecoration(
-                  color: AppColors.primary.withOpacity(0.1),
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: Icon(
-                  _getIconData(category.name),
-                  size: 28,
-                  color: AppColors.primary,
-                ),
+              // Icon Container
+              Image.asset(
+                _getIconPath(category.name),
+                width: 48,
+                height: 48,
               ),
+              // Tag (jika ada)
               if (category.tag != null)
                 Positioned(
-                  top: -8,
-                  right: -8,
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 6,
-                      vertical: 2,
-                    ),
-                    decoration: BoxDecoration(
-                      color: Colors.orange,
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                    child: Text(
-                      category.tag!,
-                      style: const TextStyle(
-                        color: Colors.white,
-                        fontSize: 10,
-                        fontWeight: FontWeight.bold,
+                  top: -10,
+                  left: -10,
+                  child: CustomPaint(
+                    painter: TagPainter(),
+                    child: Container(
+                      padding: const EdgeInsets.only(
+                        left: 8,
+                        right: 8,
+                        top: 2,
+                        bottom: 2,
+                      ),
+                      child: Text(
+                        category.tag!,
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 11,
+                          fontWeight: FontWeight.bold,
+                        ),
                       ),
                     ),
                   ),
                 ),
             ],
           ),
-          const SizedBox(height: 8),
+          const SizedBox(height: 4),
           Text(
             category.name,
-            style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w500),
+            style: const TextStyle(
+              fontSize: 14,
+              fontWeight: FontWeight.w500,
+            ),
           ),
         ],
       ),
     );
   }
 
-  IconData _getIconData(String categoryName) {
+  String _getIconPath(String categoryName) {
     switch (categoryName) {
       case "JekMotor":
-        return Icons.motorcycle;
+        return "assets/images/motor_icon.png";
       case "JekMobil":
-        return Icons.directions_car;
+        return "assets/images/car_icon.png";
       case "JekClean":
-        return Icons.cleaning_services;
+        return "assets/images/cleaning_icon.png";
       case "Lainnya":
-        return Icons.more_horiz;
+        return "assets/images/more_icon.png";
       default:
-        return Icons.help_outline;
+        return "assets/images/more_icon.png";
     }
   }
+}
+
+// Custom Painter untuk membuat tag dengan pointer
+class TagPainter extends CustomPainter {
+  @override
+  void paint(Canvas canvas, Size size) {
+    final paint = Paint()
+      ..color = const Color(0xFF272343)
+      ..style = PaintingStyle.fill;
+
+    final path = Path();
+    const cornerRadius = 8.0;
+    const pointerWidth = 10.0;
+    const pointerHeight = 8.0;
+
+    // Start from top-left
+    path.moveTo(0, 0);
+    
+    // Top-right with rounded corner
+    path.lineTo(size.width - cornerRadius, 0);
+    path.quadraticBezierTo(
+      size.width, 0,
+      size.width, cornerRadius,
+    );
+    
+    // Right side
+    path.lineTo(size.width, size.height - cornerRadius);
+    
+    // Bottom-right with rounded corner
+    path.quadraticBezierTo(
+      size.width, size.height,
+      size.width - cornerRadius, size.height,
+    );
+    
+    // Bottom side with pointer
+    path.lineTo(pointerWidth, size.height);
+    path.lineTo(pointerWidth, size.height + pointerHeight);
+    path.lineTo(0, size.height);
+    
+    // Close path
+    path.close();
+
+    canvas.drawPath(path, paint);
+  }
+
+  @override
+  bool shouldRepaint(CustomPainter oldDelegate) => false;
 }

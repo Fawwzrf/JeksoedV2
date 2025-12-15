@@ -44,15 +44,24 @@ class HistoryRowItem extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Divider(thickness: 1, color: Colors.grey),
+        const Divider(thickness: 1, color: Color(0xFFE0E0E0)),
         const SizedBox(height: 14),
         Row(
           children: [
-            Icon(Icons.location_on, color: AppColors.primary, size: 16),
+            Icon(
+              Icons.location_on,
+              color: AppColors.primary,
+              size: 16,
+            ),
             const SizedBox(width: 10),
-            Text(
-              item.destinationName ?? "Tujuan",
-              style: const TextStyle(fontWeight: FontWeight.w500),
+            Expanded(
+              child: Text(
+                item.destinationName ?? "Tujuan",
+                style: const TextStyle(
+                  fontWeight: FontWeight.w500,
+                  fontSize: 14,
+                ),
+              ),
             ),
           ],
         ),
@@ -61,7 +70,10 @@ class HistoryRowItem extends StatelessWidget {
           padding: const EdgeInsets.only(left: 26),
           child: Text(
             item.destinationAddress ?? "Alamat tidak tersedia",
-            style: const TextStyle(fontSize: 14, color: Colors.grey),
+            style: const TextStyle(
+              fontSize: 14,
+              color: Colors.grey,
+            ),
           ),
         ),
       ],
