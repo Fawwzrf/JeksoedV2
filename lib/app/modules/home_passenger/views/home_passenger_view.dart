@@ -59,9 +59,7 @@ class HomePassengerView extends GetView<HomePassengerController> {
                           child: _buildRecentHistoryWithComponent(),
                         ),
                         
-                        
-                        const SizedBox(height: 32),
-                        
+        
                         // Recommendation Section
                         const Padding(
                           padding: EdgeInsets.symmetric(horizontal: 16),
