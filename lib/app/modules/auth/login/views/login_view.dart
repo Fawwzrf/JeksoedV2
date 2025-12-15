@@ -6,7 +6,6 @@ import '../../../../widget/primary_button.dart';
 
 class LoginView extends GetView<LoginController> {
   const LoginView({super.key});
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -18,129 +17,138 @@ class LoginView extends GetView<LoginController> {
           onPressed: () => Get.back(),
         ),
       ),
-      body: SingleChildScrollView(
+      body: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Header
-            const Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  "Hai Bung!",
-                  style: TextStyle(fontSize: 32, fontWeight: FontWeight.bold),
-                ),
-                Text(
-                  "Welcome Back!",
-                  style: TextStyle(fontSize: 32, fontWeight: FontWeight.bold),
-                ),
-              ],
-            ),
-
-            const SizedBox(height: 48),
-
-            // Email Field
-            TextField(
-              controller: controller.emailC,
-              decoration: InputDecoration(
-                labelText: "Email",
-                hintText: "Masukan email kamu",
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(32),
-                ),
-                enabledBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(32),
-                  borderSide: BorderSide(color: Colors.grey.shade300),
-                ),
-                focusedBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(32),
-                  borderSide: BorderSide(color: AppColors.primary, width: 2),
-                ),
-              ),
-            ),
-
-            const SizedBox(height: 16),
-
-            // Password Field
-            Obx(
-              () => TextField(
-                controller: controller.passwordC,
-                obscureText: !controller.isPasswordVisible.value,
-                decoration: InputDecoration(
-                  labelText: "Password",
-                  hintText: "Masukan password kamu",
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(32),
-                  ),
-                  enabledBorder: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(32),
-                    borderSide: BorderSide(color: Colors.grey.shade300),
-                  ),
-                  focusedBorder: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(32),
-                    borderSide: BorderSide(color: AppColors.primary, width: 2),
-                  ),
-                ),
-              ),
-            ),
-
-            // Forgot Password
-            Align(
-              alignment: Alignment.centerRight,
-              child: TextButton(
-                onPressed: controller.goToForgotPassword,
-                child: Text(
-                  "Lupa Password?",
-                  style: TextStyle(
-                    color: AppColors.primary,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-              ),
-            ),
-
-            const SizedBox(height: 24),
-
-            // Login Button
-            Obx(
-              () => controller.isLoading.value
-                  ? const Center(child: CircularProgressIndicator())
-                  : PrimaryButton(
-                      text: "Masuk",
-                      onPressed: controller.login,
-                      containerColor: const Color(0xFFFFC107),
-                      contentColor: Colors.black,
+            Expanded(
+              child: SingleChildScrollView(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    // Header
+                    const Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          "Hai Bung!",
+                          style: TextStyle(fontSize: 32, fontWeight: FontWeight.bold),
+                        ),
+                        Text(
+                          "Welcome Back!",
+                          style: TextStyle(fontSize: 32, fontWeight: FontWeight.bold),
+                        ),
+                      ],
                     ),
-            ),
 
-            const SizedBox(height: 16),
+                    const SizedBox(height: 48),
 
-            // Register Link
-            Center(
-              child: GestureDetector(
-                onTap: controller.goToRoleSelection,
-                child: RichText(
-                  text: TextSpan(
-                    style: const TextStyle(fontSize: 16, color: Colors.black),
-                    children: [
-                      const TextSpan(text: "Belum punya akun? "),
-                      TextSpan(
-                        text: "Daftar disini!",
-                        style: TextStyle(
-                          color: AppColors.primary,
-                          fontWeight: FontWeight.bold,
+                    // Email Field
+                    TextField(
+                      controller: controller.emailC,
+                      decoration: InputDecoration(
+                        labelText: "Email",
+                        hintText: "Masukan email kamu",
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(32),
+                        ),
+                        enabledBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(32),
+                          borderSide: BorderSide(color: Colors.grey.shade300),
+                        ),
+                        focusedBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(32),
+                          borderSide: BorderSide(color: AppColors.primary, width: 2),
                         ),
                       ),
-                    ],
-                  ),
+                    ),
+
+                    const SizedBox(height: 16),
+
+                    // Password Field
+                    Obx(
+                      () => TextField(
+                        controller: controller.passwordC,
+                        obscureText: !controller.isPasswordVisible.value,
+                        decoration: InputDecoration(
+                          labelText: "Password",
+                          hintText: "Masukan password kamu",
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(32),
+                          ),
+                          enabledBorder: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(32),
+                            borderSide: BorderSide(color: Colors.grey.shade300),
+                          ),
+                          focusedBorder: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(32),
+                            borderSide: BorderSide(color: AppColors.primary, width: 2),
+                          ),
+                        ),
+                      ),
+                    ),
+
+                    // Forgot Password
+                    Align(
+                      alignment: Alignment.centerLeft,
+                      child: TextButton(
+                        onPressed: controller.goToForgotPassword,
+                        child: Text(
+                          "Lupa Password?",
+                          style: TextStyle(
+                            color: AppColors.accentDark,
+                            fontWeight: FontWeight.normal,
+                            decoration: TextDecoration.underline,
+                          ),
+                        ),
+                      ),
+                    ),
+
+                    const SizedBox(height: 24),
+
+                    // Login Button
+                    Obx(
+                      () => controller.isLoading.value
+                          ? const Center(child: CircularProgressIndicator())
+                          : PrimaryButton(
+                              text: "Masuk",
+                              onPressed: controller.login,
+                              containerColor: const Color(0xFFFFC107),
+                              contentColor: Colors.black,
+                            ),
+                    ),
+
+                    const SizedBox(height: 16),
+
+                    // Register Link
+                    Center(
+                      child: GestureDetector(
+                        onTap: controller.goToRoleSelection,
+                        child: RichText(
+                          text: TextSpan(
+                            style: const TextStyle(fontSize: 12, color: Colors.grey),
+                            children: [
+                              const TextSpan(text: "Belum punya akun? "),
+                              TextSpan(
+                                text: "Daftar disini!",
+                                style: TextStyle(
+                                  color: AppColors.accentDark,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
                 ),
               ),
             ),
 
-            const SizedBox(height: 40),
-
-            // Terms and Conditions
+            // Terms and Conditions - Positioned at bottom
+            const SizedBox(height: 16),
             Center(
               child: GestureDetector(
                 onTap: controller.goToTerms,
@@ -164,6 +172,7 @@ class LoginView extends GetView<LoginController> {
                 ),
               ),
             ),
+            const SizedBox(height: 16),
           ],
         ),
       ),

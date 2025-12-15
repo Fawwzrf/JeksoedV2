@@ -5,16 +5,13 @@ import '../controllers/register_driver_controller.dart';
 import '../../../../../utils/app_colors.dart';
 
 class RegisterDriverView extends GetView<RegisterDriverController> {
-  const RegisterDriverView({super.key});
-
-  @override
+  const RegisterDriverView({super.key});  @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Colors.white,
       appBar: AppBar(
-        title: const Text('Daftar Driver'),
-        backgroundColor: AppColors.primary,
-        foregroundColor: Colors.white,
+        backgroundColor: AppColors.white,
+        foregroundColor: Colors.black,
         leading: IconButton(
           icon: const Icon(Icons.arrow_back),
           onPressed: () {
@@ -40,35 +37,34 @@ class RegisterDriverView extends GetView<RegisterDriverController> {
       }),
     );
   }
-
-  // --- STEP 1: IDENTITAS ---
   Widget _buildStep1() {
     return Padding(
       padding: const EdgeInsets.all(24.0),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          _buildProgressIndicator(),
-          const SizedBox(height: 32),
-          const Text(
-            'Identitas Driver',
-            style: TextStyle(
-              fontSize: 24,
-              fontWeight: FontWeight.bold,
-              color: AppColors.textPrimary,
+      child: Form(
+        key: controller.formKeyStep1,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            _buildProgressIndicator(),
+            const SizedBox(height: 32),
+            const Text(
+              'Identitas Driver',
+              style: TextStyle(
+                fontSize: 24,
+                fontWeight: FontWeight.bold,
+                color: AppColors.black,
+              ),
             ),
-          ),
-          const SizedBox(height: 8),
-          const Text(
-            'Lengkapi data pribadi Anda',
-            style: TextStyle(fontSize: 16, color: AppColors.textSecondary),
-          ),
-          const SizedBox(height: 32),
-          Expanded(
-            child: SingleChildScrollView(
-              child: Column(
-                children: [
-                  // Profile Picture Upload
+            const SizedBox(height: 8),
+            const Text(
+              'Lengkapi data pribadi Anda',
+              style: TextStyle(fontSize: 16, color: AppColors.textSecondary),
+            ),
+            const SizedBox(height: 32),
+            Expanded(
+              child: SingleChildScrollView(
+                child: Column(
+                  children: [
                   Center(
                     child: GestureDetector(
                       onTap: controller.pickProfileImage,
@@ -99,18 +95,32 @@ class RegisterDriverView extends GetView<RegisterDriverController> {
                         ),
                       ),
                     ),
-                  ),
-                  const SizedBox(height: 24),
+                  ),                  const SizedBox(height: 24),
                   _buildTextField(
                     controller: controller.nameController,
                     label: 'Nama Lengkap',
                     icon: Icons.person,
+                    validator: (value) {
+                      if (value == null || value.isEmpty) {
+                        return 'Nama lengkap harus diisi';
+                      }
+                      if (value.length < 3) {
+                        return 'Nama minimal 3 karakter';
+                      }
+                      return null;
+                    },
                   ),
                   const SizedBox(height: 16),
                   _buildTextField(
                     controller: controller.nimController,
                     label: 'NIM',
                     icon: Icons.badge,
+                    validator: (value) {
+                      if (value == null || value.isEmpty) {
+                        return 'NIM harus diisi';
+                      }
+                      return null;
+                    },
                   ),
                   const SizedBox(height: 16),
                   _buildTextField(
@@ -118,6 +128,15 @@ class RegisterDriverView extends GetView<RegisterDriverController> {
                     label: 'Email',
                     icon: Icons.email,
                     keyboardType: TextInputType.emailAddress,
+                    validator: (value) {
+                      if (value == null || value.isEmpty) {
+                        return 'Email harus diisi';
+                      }
+                      if (!GetUtils.isEmail(value)) {
+                        return 'Format email tidak valid';
+                      }
+                      return null;
+                    },
                   ),
                   const SizedBox(height: 16),
                   _buildTextField(
@@ -125,14 +144,31 @@ class RegisterDriverView extends GetView<RegisterDriverController> {
                     label: 'Nomor Telepon',
                     icon: Icons.phone,
                     keyboardType: TextInputType.phone,
-                  ),
-                  const SizedBox(height: 16),
+                    validator: (value) {
+                      if (value == null || value.isEmpty) {
+                        return 'Nomor telepon harus diisi';
+                      }
+                      if (value.length < 10) {
+                        return 'Nomor telepon minimal 10 digit';
+                      }
+                      return null;
+                    },
+                  ),const SizedBox(height: 16),
                   Obx(
                     () => _buildTextField(
                       controller: controller.passwordController,
                       label: 'Password',
                       icon: Icons.lock,
                       obscureText: !controller.isPasswordVisible.value,
+                      validator: (value) {
+                        if (value == null || value.isEmpty) {
+                          return 'Password harus diisi';
+                        }
+                        if (value.length < 6) {
+                          return 'Password minimal 6 karakter';
+                        }
+                        return null;
+                      },
                       suffixIcon: IconButton(
                         icon: Icon(
                           controller.isPasswordVisible.value
@@ -150,6 +186,15 @@ class RegisterDriverView extends GetView<RegisterDriverController> {
                       label: 'Konfirmasi Password',
                       icon: Icons.lock_outline,
                       obscureText: !controller.isConfirmPasswordVisible.value,
+                      validator: (value) {
+                        if (value == null || value.isEmpty) {
+                          return 'Konfirmasi password harus diisi';
+                        }
+                        if (value != controller.passwordController.text) {
+                          return 'Password tidak cocok';
+                        }
+                        return null;
+                      },
                       suffixIcon: IconButton(
                         icon: Icon(
                           controller.isConfirmPasswordVisible.value
@@ -159,8 +204,7 @@ class RegisterDriverView extends GetView<RegisterDriverController> {
                         onPressed: controller.toggleConfirmPasswordVisibility,
                       ),
                     ),
-                  ),
-                ],
+                  ),                ],
               ),
             ),
           ),
@@ -168,10 +212,10 @@ class RegisterDriverView extends GetView<RegisterDriverController> {
           _buildNextButton(() => controller.submitStep1()),
         ],
       ),
+      ),
     );
   }
 
-  // --- STEP 2: DOKUMEN ---
   Widget _buildStep2() {
     return Padding(
       padding: const EdgeInsets.all(24.0),
@@ -244,20 +288,8 @@ class RegisterDriverView extends GetView<RegisterDriverController> {
                 ],
               ),
             ),
-          ),
-          const SizedBox(height: 24),
-          Row(
-            children: [
-              Expanded(
-                child: _buildBackButton(() => controller.previousStep()),
-              ),
-              const SizedBox(width: 16),
-              Expanded(
-                flex: 2,
-                child: _buildNextButton(() => controller.submitStep2()),
-              ),
-            ],
-          ),
+          ),          const SizedBox(height: 24),
+          _buildNextButton(() => controller.submitStep2()),
         ],
       ),
     );
@@ -342,17 +374,8 @@ class RegisterDriverView extends GetView<RegisterDriverController> {
                 ],
               ),
             ),
-          ),
-          const SizedBox(height: 24),
-          Row(
-            children: [
-              Expanded(
-                child: _buildBackButton(() => controller.previousStep()),
-              ),
-              const SizedBox(width: 16),
-              Expanded(flex: 2, child: Obx(() => _buildSubmitButton())),
-            ],
-          ),
+          ),          const SizedBox(height: 24),
+          Obx(() => _buildSubmitButton()),
         ],
       ),
     );
@@ -382,25 +405,48 @@ class RegisterDriverView extends GetView<RegisterDriverController> {
         ),
       ],
     );
-  }
-
-  Widget _buildTextField({
+  }  Widget _buildTextField({
     required TextEditingController controller,
     required String label,
     required IconData icon,
     bool obscureText = false,
     Widget? suffixIcon,
     TextInputType? keyboardType,
+    String? Function(String?)? validator,
   }) {
     return TextFormField(
       controller: controller,
       obscureText: obscureText,
       keyboardType: keyboardType,
+      validator: validator,
+      autovalidateMode: AutovalidateMode.onUserInteraction,
       decoration: InputDecoration(
         labelText: label,
         prefixIcon: Icon(icon),
         suffixIcon: suffixIcon,
-        border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+        filled: true,
+        fillColor: Colors.grey[50],
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(16.0),
+          borderSide: BorderSide(color: AppColors.border),
+        ),
+        enabledBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(16.0),
+          borderSide: BorderSide(color: AppColors.border),
+        ),
+        focusedBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(16.0),
+          borderSide: BorderSide(color: AppColors.primary, width: 2),
+        ),
+        errorBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(16.0),
+          borderSide: BorderSide(color: Colors.red),
+        ),
+        focusedErrorBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(16.0),
+          borderSide: BorderSide(color: Colors.red, width: 2),
+        ),
+        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
       ),
     );
   }
@@ -473,69 +519,57 @@ class RegisterDriverView extends GetView<RegisterDriverController> {
               isSelected ? Icons.check_circle : Icons.upload_file,
               color: isSelected ? AppColors.success : AppColors.textSecondary,
               size: 24,
-            ),
-          ],
+            ),          ],
         ),
       ),
     );
   }
 
   Widget _buildNextButton(VoidCallback onPressed) {
-    return ElevatedButton(
-      onPressed: onPressed,
-      style: ElevatedButton.styleFrom(
-        backgroundColor: AppColors.primary,
-        foregroundColor: Colors.white,
-        padding: const EdgeInsets.symmetric(vertical: 16),
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-      ),
-      child: const Text(
-        'Lanjut',
-        style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
-      ),
-    );
-  }
-
-  Widget _buildBackButton(VoidCallback onPressed) {
-    return OutlinedButton(
-      onPressed: onPressed,
-      style: OutlinedButton.styleFrom(
-        foregroundColor: AppColors.primary,
-        side: BorderSide(color: AppColors.primary),
-        padding: const EdgeInsets.symmetric(vertical: 16),
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-      ),
-      child: const Text(
-        'Kembali',
-        style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
-      ),
+    return SizedBox(
+      width: double.infinity,
+      child: ElevatedButton(
+        onPressed: onPressed,
+        style: ElevatedButton.styleFrom(
+          backgroundColor: AppColors.primary,
+          foregroundColor: Colors.black,
+          padding: const EdgeInsets.symmetric(vertical: 16),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(25)),
+        ),
+        child: const Text(
+          'Lanjut',
+          style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+        ),      ),
     );
   }
 
   Widget _buildSubmitButton() {
-    return ElevatedButton(
-      onPressed: controller.isLoading.value
-          ? null
-          : () => controller.submitStep3(),
-      style: ElevatedButton.styleFrom(
-        backgroundColor: AppColors.primary,
-        foregroundColor: Colors.white,
-        padding: const EdgeInsets.symmetric(vertical: 16),
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-      ),
-      child: controller.isLoading.value
-          ? const SizedBox(
-              width: 20,
-              height: 20,
-              child: CircularProgressIndicator(
-                strokeWidth: 2,
-                color: Colors.white,
+    return SizedBox(
+      width: double.infinity,
+      child: ElevatedButton(
+        onPressed: controller.isLoading.value
+            ? null
+            : () => controller.submitStep3(),
+        style: ElevatedButton.styleFrom(
+          backgroundColor: AppColors.primary,
+          foregroundColor: Colors.black,
+          padding: const EdgeInsets.symmetric(vertical: 16),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(25)),
+        ),
+        child: controller.isLoading.value
+            ? const SizedBox(
+                width: 20,
+                height: 20,
+                child: CircularProgressIndicator(
+                  strokeWidth: 2,
+                  color: Colors.black,
+                ),
+              )
+            : const Text(
+                'Daftar Sebagai Driver',
+                style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
               ),
-            )
-          : const Text(
-              'Daftar Sebagai Driver',
-              style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
-            ),
+      ),
     );
   }
 }

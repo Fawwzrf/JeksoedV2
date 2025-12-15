@@ -3,8 +3,7 @@ import 'package:get/get.dart';
 import '../controllers/cta_controller.dart';
 import '../../../../../utils/app_colors.dart';
 import '../../../../widget/primary_button.dart';
-
-// Data untuk setiap halaman di PageView
+import 'package:flutter_svg/flutter_svg.dart';
 class CtaPage {
   final String title;
   final String description;
@@ -22,6 +21,9 @@ class CtaView extends GetView<CtaController> {
 
   @override
   Widget build(BuildContext context) {
+    final ctrl = Get.find<CtaController>();
+    print('CtaView build - controller: $ctrl');
+    
     final pages = [
       CtaPage(
         title: "Selamat datang di JEKSOED!",
@@ -45,24 +47,19 @@ class CtaView extends GetView<CtaController> {
       body: SafeArea(
         child: Padding(
           padding: const EdgeInsets.all(16.0),
-          child: Column(
-            children: [
-              // Logo and App Name
+          child: Column(            children: [
               Row(
                 children: [
-                  Image.asset(
-                    'assets/images/apk_logo_2.jpeg',
+                  SvgPicture.asset(
+                    'assets/images/jeksoed_logo.svg',
                     width: 48,
                     height: 48,
                   ),
                   const SizedBox(width: 8),
-                  Text(
-                    'JEKSOED',
-                    style: TextStyle(
-                      fontSize: 24,
-                      fontWeight: FontWeight.bold,
-                      color: AppColors.primary,
-                    ),
+                  SvgPicture.asset(
+                    'assets/images/jeksoed_name.svg',
+                    width: 120,
+                    height: 30,
                   ),
                 ],
               ),
@@ -75,142 +72,150 @@ class CtaView extends GetView<CtaController> {
                 width: double.infinity,
                 height: 250,
                 fit: BoxFit.contain,
-              ),
+              ),              const SizedBox(height: 32),
 
-              const SizedBox(height: 32),
-
-              // PageView Content
               Expanded(
-                child: Obx(
-                  () => Column(
-                    children: [
-                      // Content
-                      Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 16.0),
-                        child: Column(
-                          children: [
-                            Text(
-                              pages[controller.currentPage.value].title,
-                              style: const TextStyle(
-                                fontSize: 24,
-                                fontWeight: FontWeight.bold,
-                              ),
-                              textAlign: TextAlign.center,
+                child: Column(
+                  children: [
+                    Expanded(
+                      child: PageView.builder(
+                        controller: controller.pageController,
+                        onPageChanged: controller.onPageChanged,
+                        itemCount: pages.length,
+                        physics: const BouncingScrollPhysics(),
+                        itemBuilder: (context, index) {
+                          return Padding(
+                            padding: const EdgeInsets.symmetric(horizontal: 24.0),
+                            child: Column(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                Text(
+                                  pages[index].title,
+                                  style: const TextStyle(
+                                    fontSize: 24,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                  textAlign: TextAlign.center,
+                                ),
+                                const SizedBox(height: 8),
+                                Text(
+                                  pages[index].description,
+                                  style: const TextStyle(
+                                    fontSize: 16,
+                                    color: Colors.grey,
+                                  ),
+                                  textAlign: TextAlign.center,
+                                ),
+                                const SizedBox(height: 4),
+                                Text(
+                                  pages[index].subDescription,
+                                  style: const TextStyle(
+                                    fontSize: 16,
+                                    color: Colors.grey,
+                                  ),
+                                  textAlign: TextAlign.center,
+                                ),
+                              ],
                             ),
-                            const SizedBox(height: 8),
-                            Text(
-                              pages[controller.currentPage.value].description,
-                              style: const TextStyle(
-                                fontSize: 18,
-                                fontWeight: FontWeight.w600,
-                              ),
-                              textAlign: TextAlign.center,
-                            ),
-                            const SizedBox(height: 4),
-                            Text(
-                              pages[controller.currentPage.value]
-                                  .subDescription,
-                              style: const TextStyle(
-                                fontSize: 16,
-                                color: Colors.grey,
-                              ),
-                              textAlign: TextAlign.center,
-                            ),
-                          ],
-                        ),
+                          );
+                        },
                       ),
-
-                      const SizedBox(height: 16),
-
-                      // Page Indicator
-                      Row(
+                    ),                    const SizedBox(height: 16),
+                    Obx(
+                      () => Row(
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: List.generate(
                           pages.length,
-                          (index) => Container(
-                            width: 8,
-                            height: 8,
-                            margin: const EdgeInsets.symmetric(horizontal: 4),
-                            decoration: BoxDecoration(
-                              shape: BoxShape.circle,
-                              color: controller.currentPage.value == index
-                                  ? const Color(0xFF272343)
-                                  : Colors.grey.shade300,
+                          (index) => GestureDetector(
+                            onTap: () {
+                              controller.pageController.animateToPage(
+                                index,
+                                duration: const Duration(milliseconds: 400),
+                                curve: Curves.easeInOut,
+                              );
+                            },
+                            child: AnimatedContainer(
+                              duration: const Duration(milliseconds: 300),
+                              width: controller.currentPage.value == index ? 24 : 8,
+                              height: 8,
+                              margin: const EdgeInsets.symmetric(horizontal: 4),
+                              decoration: BoxDecoration(
+                                borderRadius: BorderRadius.circular(4),
+                                color: controller.currentPage.value == index
+                                    ? const Color(0xFF272343)
+                                    : Colors.grey.shade300,
+                              ),
                             ),
                           ),
                         ),
                       ),
+                    ),const Spacer(),
 
-                      const Spacer(),
-
-                      // Buttons
-                      Column(
-                        children: [
-                          PrimaryButton(
-                            text: "Masuk dulu, yuk!",
-                            onPressed: controller.goToLogin,
-                            containerColor: const Color(0xFFFFC107),
-                            contentColor: Colors.black,
-                          ),
-                          const SizedBox(height: 8),
-                          SizedBox(
-                            width: double.infinity,
-                            height: 50,
-                            child: OutlinedButton(
-                              onPressed: controller.goToRoleSelection,
-                              style: OutlinedButton.styleFrom(
-                                side: const BorderSide(
-                                  color: Color(0xFFFFC107),
-                                  width: 1,
-                                ),
-                                shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(8),
-                                ),
+                    Column(
+                      children: [
+                        PrimaryButton(
+                          text: "Masuk dulu, yuk!",
+                          onPressed: controller.goToLogin,
+                          containerColor: const Color(0xFFFFC107),
+                          contentColor: Colors.black,
+                        ),
+                        const SizedBox(height: 8),
+                        SizedBox(
+                          width: double.infinity,
+                          height: 50,
+                          child: OutlinedButton(
+                            onPressed: controller.goToRoleSelection,
+                            style: OutlinedButton.styleFrom(
+                              side: const BorderSide(
+                                color: Color(0xFFFFC107),
+                                width: 1,
                               ),
-                              child: const Text(
-                                "Belum ada akun? Gas bikin!",
-                                style: TextStyle(
-                                  color: Colors.black,
-                                  fontWeight: FontWeight.w600,
-                                ),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(25),
                               ),
                             ),
-                          ),
-                        ],
-                      ),
-
-                      const SizedBox(height: 16),
-
-                      // Terms and Conditions
-                      GestureDetector(
-                        onTap: controller.goToTerms,
-                        child: RichText(
-                          textAlign: TextAlign.center,
-                          text: TextSpan(
-                            style: const TextStyle(
-                              fontSize: 12,
-                              color: Colors.grey,
+                            child: const Text(
+                              "Belum ada akun? Gas bikin!",
+                              style: TextStyle(
+                                color: Colors.black,
+                                fontWeight: FontWeight.w600,
+                              ),
                             ),
-                            children: [
-                              const TextSpan(
-                                text:
-                                    "Masuk atau daftar artinya kamu udah oke dan setuju sama ",
-                              ),
-                              TextSpan(
-                                text: "Syarat & Ketentuan",
-                                style: TextStyle(
-                                  color: AppColors.primary,
-                                  fontWeight: FontWeight.bold,
-                                  decoration: TextDecoration.underline,
-                                ),
-                              ),
-                              const TextSpan(text: " Privasi kita."),
-                            ],
                           ),
                         ),
+                      ],
+                    ),
+
+                    const SizedBox(height: 16),
+
+                    GestureDetector(
+                      onTap: controller.goToTerms,
+                      child: RichText(
+                        textAlign: TextAlign.center,
+                        text: TextSpan(
+                          style: const TextStyle(
+                            fontSize: 12,
+                            color: Colors.grey,
+                          ),
+                          children: [
+                            const TextSpan(
+                              text:
+                                  "Masuk atau daftar artinya kamu udah oke dan setuju sama ",
+                            ),
+                            TextSpan(
+                              text: "Syarat & Ketentuan",
+                              style: TextStyle(
+                                color: AppColors.accentDark,
+                                fontWeight: FontWeight.bold,
+                                decoration: TextDecoration.underline,
+                              ),
+                            ),
+                            const TextSpan(text: " Privasi kita."),
+                          ],
+                        ),
                       ),
-                    ],
-                  ),
+                    ),
+                  ],
                 ),
               ),
             ],
