@@ -60,6 +60,8 @@ class TripController extends GetxController {
 
   TripController({required this.rideRequestId});
 
+  bool _hasNavigatedToRating = false;
+
   @override
   void onInit() {
     super.onInit();
@@ -94,7 +96,15 @@ class TripController extends GetxController {
               );
 
               await loadOtherUserInfo(isDriver, ride);
-              // await updateRouteBasedOnStatus(); // (Implementasi logika peta)
+              if (!isDriver &&
+                  ride.status == 'completed' &&
+                  !_hasNavigatedToRating) {
+                _hasNavigatedToRating = true;
+
+                Future.delayed(const Duration(seconds: 1), () {
+                  Get.offNamed('/rating/${ride.driverId}/${ride.id}');
+                });
+              }
             } catch (e) {
               print('Error processing trip update: $e');
             }
