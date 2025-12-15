@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 
 class Category {
   final String name;
@@ -18,20 +19,20 @@ class CategoryGrid extends StatelessWidget {
     final categories = [
       Category(
         name: "JekMotor",
-        iconPath: "assets/images/motor_icon.xml",
+        iconPath: "assets/images/motor_icon.svg",
         tag: "START7K",
       ),
       Category(
         name: "JekMobil",
-        iconPath: "assets/images/car_icon.xml",
+        iconPath: "assets/images/car_icon.svg",
         tag: "START13K",
       ),
       Category(
         name: "JekClean",
-        iconPath: "assets/images/cleaning_icon.xml",
+        iconPath: "assets/images/cleaning_icon.svg",
         tag: "-10%",
       ),
-      Category(name: "Lainnya", iconPath: "assets/images/more_icon.xml"),
+      Category(name: "Lainnya", iconPath: "assets/images/more_icon.svg"),
     ];
 
     return Row(
@@ -58,12 +59,11 @@ class CategoryItem extends StatelessWidget {
       onTap: onClick,
       child: Column(
         mainAxisSize: MainAxisSize.min,
-        children: [
-          Stack(
+        children: [          Stack(
             clipBehavior: Clip.none,
             children: [
               // Icon Container
-              Image.asset(
+              SvgPicture.asset(
                 _getIconPath(category.name),
                 width: 48,
                 height: 48,
@@ -111,15 +111,15 @@ class CategoryItem extends StatelessWidget {
   String _getIconPath(String categoryName) {
     switch (categoryName) {
       case "JekMotor":
-        return "assets/images/motor_icon.png";
+        return "assets/images/motor_icon.svg";
       case "JekMobil":
-        return "assets/images/car_icon.png";
+        return "assets/images/car_icon.svg";
       case "JekClean":
-        return "assets/images/cleaning_icon.png";
+        return "assets/images/cleaning_icon.svg";
       case "Lainnya":
-        return "assets/images/more_icon.png";
+        return "assets/images/more_icon.svg";
       default:
-        return "assets/images/more_icon.png";
+        return "assets/images/more_icon.svg";
     }
   }
 }

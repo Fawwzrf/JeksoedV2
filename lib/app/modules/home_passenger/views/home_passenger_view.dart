@@ -35,7 +35,7 @@ class HomePassengerView extends GetView<HomePassengerController> {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        const SizedBox(height: 16),
+                        const SizedBox(height: 32),
                         
                         // Search Bar
                         Padding(
@@ -43,33 +43,12 @@ class HomePassengerView extends GetView<HomePassengerController> {
                           child: _buildSearchBar(),
                         ),
                         
-                        const SizedBox(height: 20),
+                        const SizedBox(height: 30),
                         
                         // Category Section
                         Padding(
                           padding: const EdgeInsets.symmetric(horizontal: 16),
                           child: CategoryGrid(onCategoryClick: controller.onCategoryClick),
-                        ),
-                        
-                        const SizedBox(height: 32),
-                        
-                        // Recommendation Section
-                        const Padding(
-                          padding: EdgeInsets.symmetric(horizontal: 16),
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                "Cari berbagai rekomendasi tempat & kegiatan seru di Purwokerto!",
-                                style: TextStyle(
-                                  fontSize: 14,
-                                  color: Colors.grey,
-                                ),
-                              ),
-                              SizedBox(height: 16),
-                              RecommendationSection(),
-                            ],
-                          ),
                         ),
                         
                         const SizedBox(height: 32),
@@ -80,7 +59,21 @@ class HomePassengerView extends GetView<HomePassengerController> {
                           child: _buildRecentHistoryWithComponent(),
                         ),
                         
-                        const SizedBox(height: 100), // Bottom padding
+                        
+                        const SizedBox(height: 32),
+                        
+                        // Recommendation Section
+                        const Padding(
+                          padding: EdgeInsets.symmetric(horizontal: 16),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              SizedBox(height: 16),
+                              RecommendationSection(),
+                            ],
+                          ),
+                        ),
+                        
                       ],
                     ),
                   ),
@@ -92,46 +85,46 @@ class HomePassengerView extends GetView<HomePassengerController> {
       ),
     );
   }  Widget _buildTopHeader() {
-    return SizedBox(
-      height: 240,
-      child: Stack(
-        children: [
-          // Background Image
-          Positioned.fill(
-            child: Image.asset(
-              'assets/images/home_bg.png',
-              fit: BoxFit.cover,
-            ),
-          ),
-          
-          // Header Content
-          SafeArea(
-            child: Padding(
+    return Container(
+      color: Colors.white,
+      child: SafeArea(
+        bottom: false,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Padding(
               padding: const EdgeInsets.only(
-                left: 16,
+                left: 32,
                 right: 16,
-                top: 48,
+                top: 32,
                 bottom: 16,
               ),
-              child: Align(
-                alignment: Alignment.topLeft,
-                child: Obx(
-                  () => Text(
-                    "Halo, ${controller.userName.value}!",
-                    style: const TextStyle(
-                      fontSize: 32,
-                      fontWeight: FontWeight.bold,
-                      color: Colors.black,
-                    ),
+              child: Obx(
+                () => Text(
+                  "Halo, ${controller.userName.value}!",
+                  style: const TextStyle(
+                    fontSize: 32,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.black,
                   ),
                 ),
+              ),            ),
+            
+            SizedBox(
+              height: 260,
+              width: double.infinity,
+              child: Image.asset(
+                'assets/images/home_bg.png',
+                fit: BoxFit.cover,
+                alignment: Alignment.bottomCenter,
               ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
-  }  Widget _buildSearchBar() {
+  }Widget _buildSearchBar() {
     return GestureDetector(
       onTap: controller.onSearchClick,
       child: Container(
@@ -171,40 +164,43 @@ class HomePassengerView extends GetView<HomePassengerController> {
   }
 
   Widget _buildRecentHistoryWithComponent() {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            const Text(
-              "Aktivitas Terkini",
-              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-            ),
-            Text(
-              "Lihat semua",
-              style: TextStyle(
-                fontSize: 14,
-                color: AppColors.primary,
-                fontWeight: FontWeight.w500,
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              const Text(
+                "Baru - baru ini..",
+                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
               ),
-            ),
-          ],
-        ),
-        const SizedBox(height: 16),
-        Obx(
-          () => RecentHistoryList(
-            history: controller.recentTrips
-                .map(
-                  (trip) => RideHistoryItem(
-                    destinationName: trip['destination'],
-                    destinationAddress: trip['address'],
-                  ),
-                )
-                .toList(),
+              Text(
+                "Lihat semua",
+                style: TextStyle(
+                  fontSize: 14,
+                  color: AppColors.primary,
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+            ],
           ),
-        ),
-      ],
+          const SizedBox(height: 16),
+          Obx(
+            () => RecentHistoryList(
+              history: controller.recentTrips
+                  .map(
+                    (trip) => RideHistoryItem(
+                      destinationName: trip['destination'],
+                      destinationAddress: trip['address'],
+                    ),
+                  )
+                  .toList(),
+            ),
+          ),
+        ],
+      ),
     );
   }
 }
