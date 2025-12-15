@@ -7,6 +7,7 @@ import 'app/data/services/ride_service.dart';
 import 'app/controllers/preview_controller.dart';
 import 'utils/app_colors.dart';
 import 'utils/app_constants.dart';
+import 'package:intl/date_symbol_data_local.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -16,6 +17,7 @@ void main() async {
     anonKey: AppConstants.supabaseAnonKey,
   );
 
+  await initializeDateFormatting('id_ID', null);
   await initPreviewServices();
 
   runApp(const MyApp());
