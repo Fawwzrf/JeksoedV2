@@ -174,14 +174,6 @@ class HomePassengerView extends GetView<HomePassengerController> {
                 "Baru - baru ini..",
                 style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
               ),
-              Text(
-                "Lihat semua",
-                style: TextStyle(
-                  fontSize: 14,
-                  color: AppColors.primary,
-                  fontWeight: FontWeight.w500,
-                ),
-              ),
             ],
           ),
           const SizedBox(height: 16),

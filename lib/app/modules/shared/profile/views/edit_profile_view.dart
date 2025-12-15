@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import 'package:jeksoedv2/utils/app_colors.dart';
 import '../controllers/profile_controller.dart';
 
 class EditProfileView extends StatelessWidget {
@@ -10,7 +11,7 @@ class EditProfileView extends StatelessWidget {
     final controller = Get.find<EditProfileController>();
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Edit Profile'),
+        title: const Text('Edit Profile', style: TextStyle(fontSize: 28, fontWeight: FontWeight.bold),),
         backgroundColor: Colors.white,
         foregroundColor: Colors.black,
         elevation: 1,
@@ -53,7 +54,7 @@ class EditProfileView extends StatelessWidget {
                         onTap: controller.pickImage,
                         child: Container(
                           decoration: BoxDecoration(
-                            color: Colors.yellow,
+                            color: AppColors.primary,
                             shape: BoxShape.circle,
                           ),
                           padding: const EdgeInsets.all(8),
@@ -97,9 +98,12 @@ class EditProfileView extends StatelessWidget {
                             controller.updateProfile();
                           },
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.yellow,
+                      backgroundColor: AppColors.primary,
                       foregroundColor: Colors.black,
                       minimumSize: const Size.fromHeight(48),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(25),
+                      ),
                     ),
                     child: controller.isLoading.value
                         ? const CircularProgressIndicator(color: Colors.black)

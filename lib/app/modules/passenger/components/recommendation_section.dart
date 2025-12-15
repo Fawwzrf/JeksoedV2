@@ -1,16 +1,19 @@
 import 'package:flutter/material.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 class Recommendation {
   final String imageResId;
   final String title;
   final String description;
   final String italicWord;
+  final String? link;
 
   Recommendation({
     required this.imageResId,
     required this.title,
     required this.description,
     required this.italicWord,
+    this.link,
   });
 }
 
@@ -26,12 +29,14 @@ class RecommendationSection extends StatelessWidget {
         title: "Cafe Terbaik di Purwokerto",
         description: "Kunjungi cafe-cafe menarik untuk ngopi santai",
         italicWord: "liat",
+        link: "https://bobobox.com/blog/cafe-di-purwokerto-yang-instagrammable/", // contoh link
       ),
       Recommendation(
         imageResId: "assets/images/wisata_banner.jpeg",
         title: "Destinasi Wisata Populer",
         description: "Jelajahi tempat wisata menarik di sekitar Unsoed",
         italicWord: "jelajahi",
+        link: "https://www.idntimes.com/travel/destination/tempat-wisata-di-purwokerto-surga-tersembunyi-di-tanah-jawa-00-z3chf-85bfpb", // contoh link
       ),
     ];
 
@@ -64,8 +69,10 @@ class RecommendationSection extends StatelessWidget {
             padding: const EdgeInsets.only(bottom: 16),
             child: RecommendationItemCard(
               recommendation: recommendation,
-              onClick: () {
-                // Handle click
+              onClick: () async {
+                if ((recommendation.link ?? '').isNotEmpty) {
+                  await launchUrl(Uri.parse(recommendation.link!));
+                }
               },
             ),
           );

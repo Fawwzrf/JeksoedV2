@@ -15,20 +15,18 @@ class ActivityView extends GetView<ActivityController> {
       backgroundColor: Colors.grey.shade100,
       body: Column(
         children: [
-          // Header
           Container(
             color: Colors.white,
-            padding: const EdgeInsets.all(16),
+            padding: const EdgeInsets.only(top: 48, left: 16, right: 16, bottom: 16),
             child: Row(
               children: [
-                Icon(Icons.history, color: AppColors.primaryGreen, size: 24),
-                const SizedBox(width: 8),
                 const Text(
                   'Riwayat Aktivitas',
                   style: TextStyle(
-                    fontSize: 20,
+                    fontSize: 32,
                     fontWeight: FontWeight.bold,
                     color: Colors.black87,
+                    
                   ),
                 ),
               ],
@@ -40,8 +38,8 @@ class ActivityView extends GetView<ActivityController> {
             color: Colors.white,
             child: TabBar(
               controller: _getTabController(context),
-              indicatorColor: AppColors.primaryGreen,
-              labelColor: AppColors.primaryGreen,
+              indicatorColor: AppColors.primary,
+              labelColor: AppColors.textBlack,
               unselectedLabelColor: Colors.grey,
               tabs: const [
                 Tab(text: 'Semua'),
@@ -60,7 +58,7 @@ class ActivityView extends GetView<ActivityController> {
               if (state.isLoading) {
                 return const Center(
                   child: CircularProgressIndicator(
-                    color: AppColors.primaryGreen,
+                    color: AppColors.primary,
                   ),
                 );
               }
@@ -164,7 +162,7 @@ class ActivityView extends GetView<ActivityController> {
                           children: [
                             _buildRouteRow(
                               Icons.radio_button_checked,
-                              AppColors.primaryGreen,
+                              AppColors.info,
                               ride.pickupAddress.isNotEmpty
                                   ? ride.pickupAddress
                                   : 'Lokasi Jemput',
@@ -238,7 +236,7 @@ class ActivityView extends GetView<ActivityController> {
                   child: Text(
                     'Detail Pesanan >',
                     style: TextStyle(
-                      color: AppColors.primaryGreen,
+                      color: AppColors.primaryDark,
                       fontWeight: FontWeight.bold,
                       fontSize: 14,
                     ),

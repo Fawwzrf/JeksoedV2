@@ -16,9 +16,9 @@ class ActivityDetailView extends GetView<ActivityDetailController> {
       appBar: AppBar(
         title: const Text(
           'Detail',
-          style: TextStyle(fontWeight: FontWeight.bold, color: Colors.white),
+          style: TextStyle(fontSize: 28, fontWeight: FontWeight.bold, color: Colors.white),
         ),
-        backgroundColor: AppColors.primaryGreen,
+        backgroundColor: AppColors.primaryDark,
         leading: IconButton(
           icon: const Icon(Icons.arrow_back, color: Colors.white),
           onPressed: () => Get.back(),
@@ -29,7 +29,7 @@ class ActivityDetailView extends GetView<ActivityDetailController> {
 
         if (state.isLoading) {
           return const Center(
-            child: CircularProgressIndicator(color: AppColors.primaryGreen),
+            child: CircularProgressIndicator(color: AppColors.primary),
           );
         }
 
@@ -85,7 +85,7 @@ class _ActivityDetailContentState extends State<ActivityDetailContent> {
                       Polyline(
                         polylineId: const PolylineId('route'),
                         points: widget.state.polylinePoints,
-                        color: AppColors.primaryGreen,
+                        color: AppColors.primary,
                         width: 4,
                       ),
                     },
@@ -197,7 +197,7 @@ class _DetailSheet extends StatelessWidget {
           // Route Section
           _RouteRow(
             icon: Icons.radio_button_checked,
-            iconColor: AppColors.primaryGreen,
+            iconColor: AppColors.info,
             location: ride.pickupAddress.isNotEmpty
                 ? ride.pickupAddress
                 : 'Lokasi Jemput',
@@ -253,7 +253,7 @@ class _DetailSheet extends StatelessWidget {
           const SizedBox(height: 16),
 
           const Text(
-            '* Fitur chat dan telepon hanya tersedia hingga 30 menit setelah perjalanan selesai.',
+            '* Fitur chat hanya tersedia hingga 30 menit setelah perjalanan selesai.',
             style: TextStyle(color: Colors.grey, fontSize: 12),
           ),
 
@@ -302,7 +302,7 @@ class _UserInfoRow extends StatelessWidget {
           onPressed: isChatEnabled ? onChatClick : null,
           icon: Icon(
             Icons.chat,
-            color: isChatEnabled ? AppColors.primaryGreen : Colors.grey,
+            color: isChatEnabled ? AppColors.primary : Colors.grey,
           ),
         ),
       ],
@@ -367,7 +367,7 @@ class _DriverInfoRow extends StatelessWidget {
           onPressed: isChatEnabled ? onChatClick : null,
           icon: Icon(
             Icons.chat,
-            color: isChatEnabled ? AppColors.primaryGreen : Colors.grey,
+            color: isChatEnabled ? AppColors.primary : Colors.grey,
           ),
         ),
       ],
@@ -434,10 +434,12 @@ class _RatingSection extends StatelessWidget {
     final rating = ride.rating ?? 0;
 
     return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         const Text(
           'Rating Perjalanan',
           style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+          textAlign: TextAlign.center,
         ),
         const SizedBox(height: 8),
         if (rating > 0) ...[
@@ -455,6 +457,7 @@ class _RatingSection extends StatelessWidget {
           const Text(
             'Belum ada rating untuk perjalanan ini',
             style: TextStyle(color: Colors.grey),
+            textAlign: TextAlign.center,
           ),
         ],
       ],

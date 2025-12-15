@@ -1,4 +1,6 @@
 import 'package:get/get.dart';
+import 'package:jeksoedv2/app/modules/shared/activity/bindings/activity_binding.dart';
+import 'package:jeksoedv2/app/modules/shared/activity/views/activity_view.dart';
 import '../modules/splash/bindings/splash_binding.dart';
 import '../modules/splash/views/splash_view.dart';
 import '../modules/auth/cta/bindings/cta_binding.dart';
@@ -157,6 +159,11 @@ class AppPages {
       name: Routes.editProfile,
       page: () => const EditProfileView(),
       binding: EditProfileBinding(),
+    ),
+    GetPage(
+      name: '/activity',
+      page: () => ActivityView(),
+      binding: ActivityBinding(),
     ),
   ];
 }
