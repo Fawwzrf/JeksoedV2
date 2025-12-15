@@ -23,13 +23,13 @@ class SplashController extends GetxController {
       try {
         final user = await _supabase
             .from('users')
-            .select('role')
+            .select('user_type')
             .eq('id', session.user.id)
             .maybeSingle();
 
-        final role = user?['role'];
+        final userType = user?['user_type'];
 
-        if (role == 'driver') {
+        if (userType == 'driver') {
           Get.offAllNamed(Routes.driverMain);
         } else {
           Get.offAllNamed(Routes.passengerMain);
