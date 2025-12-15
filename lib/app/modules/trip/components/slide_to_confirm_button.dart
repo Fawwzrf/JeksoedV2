@@ -6,11 +6,13 @@ import '../../../../utils/app_colors.dart';
 class SlideToConfirmButton extends StatefulWidget {
   final String text;
   final VoidCallback onConfirmed;
+  final bool isLoading;
 
   const SlideToConfirmButton({
     super.key,
     required this.text,
     required this.onConfirmed,
+    this.isLoading = false,
   });
 
   @override
@@ -23,6 +25,7 @@ class _SlideToConfirmButtonState extends State<SlideToConfirmButton>
   late Animation<double> _animation;
   double _dragPosition = 0.0;
   bool _isConfirmed = false;
+  double _maxWidth = 0.0;
 
   @override
   void initState() {
@@ -43,11 +46,15 @@ class _SlideToConfirmButtonState extends State<SlideToConfirmButton>
     super.dispose();
   }
 
+  double _getMaxDragDistance() => _maxWidth - 56;
+
   void _onPanStart(DragStartDetails details) {
     _controller.stop();
   }
 
   void _onPanUpdate(DragUpdateDetails details) {
+    if (_isConfirmed || widget.isLoading) return;
+
     setState(() {
       _dragPosition += details.delta.dx;
       _dragPosition = _dragPosition.clamp(0.0, _getMaxDragDistance());
@@ -55,97 +62,140 @@ class _SlideToConfirmButtonState extends State<SlideToConfirmButton>
   }
 
   void _onPanEnd(DragEndDetails details) {
-    final threshold = _getMaxDragDistance() * 0.8;
+    if (_isConfirmed || widget.isLoading) return;
 
-    if (_dragPosition >= threshold && !_isConfirmed) {
-      _isConfirmed = true;
+    final threshold = _getMaxDragDistance() * 0.75;
+
+    if (_dragPosition >= threshold) {
+      setState(() {
+        _dragPosition = _getMaxDragDistance();
+        _isConfirmed = true;
+      });
       widget.onConfirmed();
-      _resetButton();
     } else {
       _resetButton();
     }
   }
 
   void _resetButton() {
+    // Animasi balik ke kiri
+    final start = _dragPosition;
     _controller.reset();
-    _controller.forward().then((_) {
+
+    Animation<double> animation = Tween<double>(
+      begin: start,
+      end: 0.0,
+    ).animate(CurvedAnimation(parent: _controller, curve: Curves.easeOut));
+
+    animation.addListener(() {
       setState(() {
-        _dragPosition = 0.0;
-        _isConfirmed = false;
+        _dragPosition = animation.value;
       });
+    });
+
+    _controller.forward().then((_) {
+      if (mounted) {
+        setState(() {
+          _isConfirmed = false;
+          _dragPosition = 0.0;
+        });
+      }
     });
   }
 
-  double _getMaxDragDistance() {
-    return MediaQuery.of(context).size.width - 32 - 56; // margin + thumb size
+  @override
+  void didUpdateWidget(SlideToConfirmButton oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    // Jika loading selesai dan status reset, kembalikan tombol
+    if (!widget.isLoading && _isConfirmed) {
+      _resetButton();
+    }
   }
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      height: 56,
-      width: double.infinity,
-      decoration: BoxDecoration(
-        color: AppColors.primary,
-        borderRadius: BorderRadius.circular(50),
-      ),
-      child: Stack(
-        children: [
-          // Background text
-          Center(
-            child: AnimatedBuilder(
-              animation: _animation,
-              builder: (context, child) {
-                final progress = _dragPosition / _getMaxDragDistance();
-                return Opacity(
-                  opacity: 1.0 - progress,
-                  child: Text(
-                    widget.text,
-                    style: const TextStyle(
-                      color: Colors.black,
-                      fontWeight: FontWeight.w600,
-                      fontSize: 16,
-                    ),
-                  ),
-                );
-              },
-            ),
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        // Ambil lebar asli dari parent widget
+        _maxWidth = constraints.maxWidth;
+
+        return Container(
+          height: 56,
+          width: _maxWidth,
+          decoration: BoxDecoration(
+            color: AppColors.primary,
+            borderRadius: BorderRadius.circular(50),
           ),
+          child: Stack(
+            children: [
+              // 1. Teks Latar Belakang
+              Center(
+                child: widget.isLoading
+                    ? const SizedBox(
+                        width: 20,
+                        height: 20,
+                        child: CircularProgressIndicator(
+                          color: Colors.black,
+                          strokeWidth: 2,
+                        ),
+                      )
+                    : Opacity(
+                        opacity:
+                            1.0 -
+                            (_dragPosition /
+                                (_getMaxDragDistance() == 0
+                                    ? 1
+                                    : _getMaxDragDistance())),
+                        child: Text(
+                          widget.text,
+                          style: const TextStyle(
+                            color: Colors.black,
+                            fontWeight: FontWeight.w600,
+                            fontSize: 16,
+                          ),
+                        ),
+                      ),
+              ),
 
-          // Draggable thumb
-          AnimatedBuilder(
-            animation: _animation,
-            builder: (context, child) {
-              final animatedPosition = _animation.isAnimating
-                  ? _dragPosition * (1.0 - _animation.value)
-                  : _dragPosition;
-
-              return Positioned(
-                left: animatedPosition,
+              // 2. Tombol Geser (Thumb)
+              Positioned(
+                left: widget.isLoading ? _getMaxDragDistance() : _dragPosition,
                 top: 4,
                 child: GestureDetector(
-                  onPanStart: _onPanStart,
                   onPanUpdate: _onPanUpdate,
                   onPanEnd: _onPanEnd,
                   child: Container(
                     height: 48,
                     width: 48,
                     decoration: BoxDecoration(
-                      color: Colors.black.withValues(alpha: 0.1),
-                      shape: BoxShape.circle,
-                    ),
-                    child: const Icon(
-                      Icons.keyboard_arrow_right,
                       color: Colors.white,
-                      size: 32,
+                      shape: BoxShape.circle,
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withOpacity(0.1),
+                          blurRadius: 4,
+                          offset: const Offset(0, 2),
+                        ),
+                      ],
                     ),
+                    child: widget.isLoading
+                        ? const Icon(
+                            Icons.check,
+                            color: AppColors.primaryGreen,
+                            size: 24,
+                          )
+                        : const Icon(
+                            Icons.keyboard_arrow_right,
+                            color: AppColors.primary,
+                            size: 32,
+                          ),
                   ),
                 ),
-              );
-            },
+              ),
+            ],
           ),
-        ],
-      ),
+        );
+      },
     );
   }
 }

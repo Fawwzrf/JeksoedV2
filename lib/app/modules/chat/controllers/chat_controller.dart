@@ -60,13 +60,16 @@ class ChatController extends GetxController {
   @override
   void onInit() {
     super.onInit();
-    // Set rideId dari arguments (jika tidak ada, lempar error agar mudah dideteksi)
+    String? idFromParam = Get.parameters['rideRequestId'];
     final arg = Get.arguments;
-    if (arg is String && arg.isNotEmpty) {
+    if (idFromParam != null && idFromParam.isNotEmpty) {
+      rideId = idFromParam;
+    } else if (arg is String && arg.isNotEmpty) {
       rideId = arg;
     } else {
+      // Jika keduanya kosong, baru lempar error
       throw Exception(
-        'ChatController: rideId tidak ditemukan di Get.arguments',
+        'ChatController: rideId tidak ditemukan di Parameters maupun Arguments',
       );
     }
 
@@ -230,6 +233,7 @@ class ChatController extends GetxController {
         'sender_id': currentUserId,
         'content': textToSend,
         'type': 'text',
+        'created_at': DateTime.now().toIso8601String(),
       });
     } catch (e) {
       print('Error sending message: $e');
