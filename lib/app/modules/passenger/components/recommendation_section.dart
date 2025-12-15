@@ -45,12 +45,12 @@ class RecommendationSection extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
-                "Rekomendasi untuk Anda",
+                "Cucu Jendral belum pernah kesini? Rugi dong!",
                 style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
               ),
               SizedBox(height: 4),
               Text(
-                "Tempat menarik yang bisa Anda kunjungi",
+                "Cari berbagai rekomendasi tempat dan kegiatan seru di sekitar Purwokerto!",
                 style: TextStyle(fontSize: 14, color: Colors.grey),
               ),
             ],

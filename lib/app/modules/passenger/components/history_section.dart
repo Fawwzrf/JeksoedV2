@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../../../../utils/app_colors.dart';
 
-// Model untuk data RideRequest (sesuai dengan yang ada di Android)
 class RideHistoryItem {
   final String? destinationName;
   final String? destinationAddress;

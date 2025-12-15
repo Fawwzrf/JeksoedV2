@@ -58,7 +58,6 @@ class HomePassengerController extends GetxController {
           .order("created_at", ascending: false)
           .limit(5);
 
-      // Supabase mengembalikan List<dynamic>, kita casting
       final List<dynamic> dataList = response;
 
       recentTrips.value = dataList.map((data) {
