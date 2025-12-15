@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import '../../../../routes/app_pages.dart';
 
 class RoleSelectionController extends GetxController {
   final selectedRole = Rx<String?>(null);
@@ -17,7 +18,7 @@ class RoleSelectionController extends GetxController {
   void selectDriverRole() {
     selectedRole.value = 'driver';
     // Arahkan ke register driver step 1
-    Get.toNamed('/register-driver');
+    Get.toNamed(Routes.registerDriverStep1);
   }
 
   void proceedToRegister() {
@@ -41,5 +42,4 @@ class RoleSelectionController extends GetxController {
   void goBack() {
     Get.back();
   }
-
 }

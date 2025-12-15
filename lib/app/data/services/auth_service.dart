@@ -165,7 +165,6 @@ class AuthService extends GetxService {
         'user_type': 'driver',
         'photo_url': null,
         'balance': 0,
-        'is_online': false,
         'total_rating': 5.0,
         'rating_count': 1,
         'created_at': DateTime.now().toIso8601String(),
@@ -186,6 +185,7 @@ class AuthService extends GetxService {
         'vehicle_photo_url': vehicleUrl,
         'status': 'pending',
         'created_at': DateTime.now().toIso8601String(),
+        'is_online': false,
       };
 
       await _supabase.from('drivers').insert(driverProfile);
