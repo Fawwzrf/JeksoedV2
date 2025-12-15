@@ -3,6 +3,10 @@
 import 'package:get/get.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:intl/intl.dart';
+import 'package:flutter/material.dart';
+import 'dart:io';
+import 'package:image_picker/image_picker.dart';
+import 'package:jeksoedv2/app/routes/app_pages.dart';
 
 class ProfileUiState {
   final String name;
@@ -159,12 +163,7 @@ class ProfileController extends GetxController {
   }
 
   void navigateToEditProfile() {
-    // Get.toNamed('/edit-profile');
-    Get.snackbar(
-      'Edit Profile',
-      'Fitur edit profil akan tersedia di versi selanjutnya',
-      snackPosition: SnackPosition.BOTTOM,
-    );
+    Get.toNamed(Routes.editProfile);
   }
 
   void navigateToAbout() {
@@ -177,5 +176,100 @@ class ProfileController extends GetxController {
 
   void navigateToTnc() {
     Get.toNamed('/tnc');
+  }
+}
+
+class EditProfileController extends GetxController {
+  final nameController = TextEditingController();
+  final emailController = TextEditingController();
+  final passwordController = TextEditingController();
+  final isLoading = false.obs;
+  final photoUrl = ''.obs;
+  final pickedImage = Rx<File?>(null);
+
+  @override
+  void onReady() {
+    super.onReady();
+    if (Get.isRegistered<ProfileController>()) {
+      final profileController = Get.find<ProfileController>();
+      final state = profileController.uiState.value;
+      nameController.text = state.name;
+      emailController.text = state.email;
+      photoUrl.value = state.photoUrl;
+    }
+  }
+
+  @override
+  void onInit() {
+    super.onInit();
+    // Kosongkan inisialisasi Get.find di onInit, pindahkan ke onReady
+  }
+
+  Future<void> pickImage() async {
+    final picker = ImagePicker();
+    final picked = await picker.pickImage(source: ImageSource.gallery, imageQuality: 80);
+    if (picked != null) {
+      pickedImage.value = File(picked.path);
+    }
+  }
+
+  Future<String?> uploadPhoto(File file) async {
+    try {
+      final supabase = Supabase.instance.client;
+      final user = supabase.auth.currentUser;
+      if (user == null) return null;
+      final fileExt = file.path.split('.').last;
+      final fileName = 'profile_${user.id}_${DateTime.now().millisecondsSinceEpoch}.$fileExt';
+      final storageRes = await supabase.storage.from('profile-photos').upload(fileName, file);
+      if (storageRes.isEmpty) return null;
+      final publicUrl = supabase.storage.from('profile-photos').getPublicUrl(fileName);
+      return publicUrl;
+    } catch (e) {
+      Get.snackbar('Error', 'Gagal upload foto: $e');
+      return null;
+    }
+  }
+
+  Future<void> updateProfile() async {
+    isLoading.value = true;
+    try {
+      final supabase = Supabase.instance.client;
+      final user = supabase.auth.currentUser;
+      String? uploadedPhotoUrl = photoUrl.value;
+      if (pickedImage.value != null) {
+        final url = await uploadPhoto(pickedImage.value!);
+        if (url != null) uploadedPhotoUrl = url;
+      }
+      if (user != null) {
+        await supabase.from('users').update({
+          'name': nameController.text,
+          'email': emailController.text,
+          'photo_url': uploadedPhotoUrl,
+        }).eq('id', user.id);
+        // Update email jika berubah
+        if (user.email != emailController.text) {
+          await supabase.auth.updateUser(UserAttributes(email: emailController.text));
+        }
+        // Update password jika diisi
+        if (passwordController.text.isNotEmpty) {
+          await supabase.auth.updateUser(UserAttributes(password: passwordController.text));
+        }
+        Get.find<ProfileController>().fetchUserData();
+        Get.back();
+        Get.snackbar('Berhasil', 'Profil berhasil diperbarui');
+      }
+    } catch (e) {
+      Get.snackbar('Error', 'Gagal memperbarui profil: $e');
+    } finally {
+      isLoading.value = false;
+    }
+  }
+
+  @override
+  void onClose() {
+    nameController.dispose();
+    emailController.dispose();
+    passwordController.dispose();
+    super.onClose();
   }
 }

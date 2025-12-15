@@ -1,4 +1,3 @@
-// filepath: lib/app/modules/shared/profile/views/profile_view.dart
 
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
@@ -19,14 +18,12 @@ class ProfileView extends GetView<ProfileController> {
           children: [
             _ProfileContent(state: state),
 
-            // Logout Dialog
             if (state.showLogoutDialog)
               _LogoutDialog(
                 onDismiss: controller.onDismissLogoutDialog,
                 onConfirm: controller.confirmLogout,
               ),
 
-            // Delete Account Dialog
             if (state.showDeleteDialog)
               _DeleteAccountDialog(
                 onDismiss: controller.onDismissDeleteDialog,
@@ -44,243 +41,217 @@ class _ProfileContent extends StatelessWidget {
 
   const _ProfileContent({required this.state});
 
+  void _navigateToEditProfile(BuildContext context) {
+    Navigator.of(context).pushNamed('/edit-profile');
+  }
+
   @override
   Widget build(BuildContext context) {
     const profileImageSize = 140.0;
     const yellowColor = Color(0xFFFFD803);
 
-    return Column(
+    return Stack(
       children: [
-        // Header with Title
-        Container(
-          width: double.infinity,
-          color: Colors.white,
-          padding: const EdgeInsets.only(
-            left: 16,
-            right: 16,
-            top: 16,
-            bottom: 16,
-          ),
-          child: SafeArea(
-            bottom: false,
-            child: const Text(
-              'Profile',
-              style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+        Column(
+          children: [
+            Container(
+              width: double.infinity,
+              color: Colors.white,
+              padding: const EdgeInsets.only(
+                left: 16,
+                right: 16,
+                top: 16,
+                bottom: 16,
+              ),
+              child: SafeArea(
+                bottom: false,
+                child: const Text(
+                  'Profile',
+                  style: TextStyle(fontSize: 32, fontWeight: FontWeight.bold),
+                ),
+              ),
             ),
-          ),
+            SizedBox(
+              width: double.infinity,
+              height: 190,
+              child: CustomPaint(painter: _YellowCurvePainter(yellowColor)),
+            ),
+          ],
         ),
-
-        // Yellow Canvas Background
-        SizedBox(
-          width: double.infinity,
-          height: 190,
-          child: CustomPaint(painter: _YellowCurvePainter(yellowColor)),
-        ),
-
-        // Content
-        Expanded(
-          child: Transform.translate(
-            offset: const Offset(0, -profileImageSize - 16),
-            child: Column(
-              children: [
-                // Profile Card with Image
-                Container(
-                  width: double.infinity,
-                  margin: const EdgeInsets.symmetric(horizontal: 16),
-                  child: Stack(
-                    clipBehavior: Clip.none,
-                    children: [
-                      // Profile Card
-                      Container(
-                        width: double.infinity,
-                        margin: const EdgeInsets.only(
-                          top: profileImageSize / 2,
-                        ),
-                        padding: const EdgeInsets.only(
-                          top: profileImageSize / 2 + 16,
-                          bottom: 16,
-                          left: 16,
-                          right: 16,
-                        ),
-                        decoration: BoxDecoration(
-                          color: Colors.white,
-                          borderRadius: BorderRadius.circular(24),
-                          boxShadow: [
-                            BoxShadow(
-                              color: Colors.black.withValues(alpha: 0.1),
-                              blurRadius: 10,
-                              offset: const Offset(0, 4),
-                            ),
-                          ],
-                        ),
-                        child: Column(
-                          children: [
-                            Text(
-                              state.name,
-                              style: const TextStyle(
-                                fontSize: 20,
-                                fontWeight: FontWeight.bold,
+        // Foreground content
+        Positioned.fill(
+          child: Align(
+            alignment: Alignment.topCenter,
+            child: Padding(
+              padding: const EdgeInsets.only(top: 120), // geser konten ke bawah agar di depan curve
+              child: SingleChildScrollView(
+                padding: EdgeInsets.zero,
+                child: Column(
+                  children: [
+                    Stack(
+                      clipBehavior: Clip.none,
+                      children: [
+                        Container(
+                          width: double.infinity,
+                          margin: const EdgeInsets.symmetric(horizontal: 16).copyWith(top: profileImageSize / 2),
+                          padding: const EdgeInsets.only(
+                            top: 16,
+                            bottom: 16,
+                            left: 16,
+                            right: 16,
+                          ),
+                          decoration: BoxDecoration(
+                            color: Colors.white,
+                            borderRadius: BorderRadius.circular(24),
+                            boxShadow: [
+                              BoxShadow(
+                                color: Colors.black.withOpacity(0.08),
+                                blurRadius: 10,
+                                offset: const Offset(0, 4),
                               ),
-                              textAlign: TextAlign.center,
-                            ),
-                            const SizedBox(height: 4),
-                            Text(
-                              state.email,
-                              style: const TextStyle(
-                                color: Colors.grey,
-                                fontSize: 14,
-                              ),
-                              textAlign: TextAlign.center,
-                            ),
-                          ],
-                        ),
-                      ),
-
-                      // Profile Image
-                      Positioned(
-                        top: 0,
-                        left: 0,
-                        right: 0,
-                        child: Center(
-                          child: Container(
-                            width: profileImageSize,
-                            height: profileImageSize,
-                            decoration: BoxDecoration(
-                              shape: BoxShape.circle,
-                              border: Border.all(color: Colors.white, width: 6),
-                              boxShadow: [
-                                BoxShadow(
-                                  color: Colors.black.withValues(alpha: 0.2),
-                                  blurRadius: 15,
-                                  offset: const Offset(0, 5),
+                            ],
+                          ),
+                          child: Column(
+                            children: [
+                              const SizedBox(height: 60),
+                              Text(
+                                state.name,
+                                style: const TextStyle(
+                                  fontSize: 20,
+                                  fontWeight: FontWeight.bold,
                                 ),
-                              ],
-                            ),
-                            child: CircleAvatar(
-                              radius: profileImageSize / 2 - 3,
-                              backgroundImage: state.photoUrl.isNotEmpty
-                                  ? NetworkImage(state.photoUrl)
-                                  : null,
-                              child: state.photoUrl.isEmpty
-                                  ? const Icon(
-                                      Icons.person,
-                                      size: 60,
-                                      color: AppColors.primaryGreen,
-                                    )
-                                  : null,
+                                textAlign: TextAlign.center,
+                              ),
+                              const SizedBox(height: 4),
+                              Text(
+                                state.email,
+                                style: const TextStyle(
+                                  color: Colors.grey,
+                                  fontSize: 14,
+                                ),
+                                textAlign: TextAlign.center,
+                              ),
+                              const SizedBox(height: 12),
+                              // Edit Akun button
+                              SizedBox(
+                                width: double.infinity,
+                                child: OutlinedButton.icon(
+                                  onPressed: () => _navigateToEditProfile(context),
+                                  icon: const Icon(Icons.edit, color: Colors.grey, size: 20),
+                                  label: const Text('Edit Akun', style: TextStyle(color: Colors.black)),
+                                  style: OutlinedButton.styleFrom(
+                                    shape: const StadiumBorder(),
+                                    side: const BorderSide(color: Colors.black12),
+                                    padding: const EdgeInsets.symmetric(vertical: 12),
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                        // Profile Image
+                        Positioned(
+                          top: 0,
+                          left: 0,
+                          right: 0,
+                          child: Center(
+                            child: Container(
+                              width: profileImageSize,
+                              height: profileImageSize,
+                              decoration: BoxDecoration(
+                                shape: BoxShape.circle,
+                                border: Border.all(color: Color(0xFFFFD803), width: 6),
+                              ),
+                              child: CircleAvatar(
+                                radius: profileImageSize / 2 - 3,
+                                backgroundImage: state.photoUrl.isNotEmpty
+                                    ? NetworkImage(state.photoUrl)
+                                    : null,
+                                backgroundColor: Colors.grey[200],
+                                child: state.photoUrl.isEmpty
+                                    ? const Icon(Icons.person, size: 60, color: Colors.grey)
+                                    : null,
+                              ),
                             ),
                           ),
                         ),
-                      ),
-                    ],
-                  ),
-                ),
-
-                const SizedBox(height: 8),
-
-                // Menu Card
-                Container(
-                  width: double.infinity,
-                  margin: const EdgeInsets.symmetric(horizontal: 16),
-                  padding: const EdgeInsets.all(16),
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.circular(24),
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.black.withValues(alpha: 0.1),
-                        blurRadius: 10,
-                        offset: const Offset(0, 4),
-                      ),
-                    ],
-                  ),
-                  child: Column(
-                    children: [
-                      _ProfileMenuItem(
-                        icon: Icons.person_outline,
-                        text: 'Edit Akun',
-                        onTap:
-                            Get.find<ProfileController>().navigateToEditProfile,
-                      ),
-                      const Divider(height: 1),
-                      _ProfileMenuItem(
-                        icon: Icons.info_outline,
-                        text: 'Tentang JekSoed',
-                        onTap: Get.find<ProfileController>().navigateToAbout,
-                      ),
-                      const Divider(height: 1),
-                      _ProfileMenuItem(
-                        icon: Icons.description_outlined,
-                        text: 'Syarat & Ketentuan',
-                        onTap: Get.find<ProfileController>().navigateToTnc,
-                      ),
-                    ],
-                  ),
-                ),
-
-                const Spacer(),
-
-                // Action Buttons
-                Container(
-                  width: double.infinity,
-                  padding: const EdgeInsets.symmetric(horizontal: 16),
-                  margin: const EdgeInsets.only(bottom: 16),
-                  child: Column(
-                    children: [
-                      // Logout Button
-                      SizedBox(
-                        width: double.infinity,
-                        child: OutlinedButton(
-                          onPressed:
-                              Get.find<ProfileController>().onLogoutClick,
-                          style: OutlinedButton.styleFrom(
-                            padding: const EdgeInsets.symmetric(vertical: 16),
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(50),
-                            ),
-                            side: const BorderSide(color: Colors.black),
+                      ],
+                    ),
+                    const SizedBox(height: 8),
+                    // Menu Card
+                    Container(
+                      width: double.infinity,
+                      margin: const EdgeInsets.symmetric(horizontal: 16),
+                      padding: const EdgeInsets.all(16),
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.circular(24),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.black.withOpacity(0.08),
+                            blurRadius: 10,
+                            offset: const Offset(0, 4),
                           ),
-                          child: const Text(
-                            'Keluar',
-                            style: TextStyle(
-                              color: Colors.black,
-                              fontSize: 16,
-                              fontWeight: FontWeight.w600,
-                            ),
+                        ],
+                      ),
+                      child: Column(
+                        children: [
+                          _ProfileMenuItem(
+                            icon: Icons.info_outline,
+                            text: 'Tentang',
+                            onTap: Get.find<ProfileController>().navigateToAbout,
                           ),
+                          const Divider(height: 1),
+                          _ProfileMenuItem(
+                            icon: Icons.description_outlined,
+                            text: 'Syarat & Ketentuan',
+                            onTap: Get.find<ProfileController>().navigateToTnc,
+                          ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(height: 150),
+
+                    Align(
+                      alignment: Alignment.bottomCenter,
+                      child: Padding(
+                        padding: const EdgeInsets.fromLTRB(16, 0, 16, 8), // 8px dari bawah
+                        child: Column(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            SizedBox(
+                              width: double.infinity,
+                              child: OutlinedButton(
+                                onPressed: Get.find<ProfileController>().onLogoutClick,
+                                style: OutlinedButton.styleFrom(
+                                  shape: const StadiumBorder(),
+                                  side: const BorderSide(color: Colors.black12),
+                                  padding: const EdgeInsets.symmetric(vertical: 16),
+                                ),
+                                child: const Text('Keluar', style: TextStyle(color: Colors.black)),
+                              ),
+                            ),
+                            const SizedBox(height: 8),
+                            SizedBox(
+                              width: double.infinity,
+                              child: OutlinedButton(
+                                onPressed: Get.find<ProfileController>().onDeleteClick,
+                                style: OutlinedButton.styleFrom(
+                                  shape: const StadiumBorder(),
+                                  side: const BorderSide(color: Colors.red),
+                                  padding: const EdgeInsets.symmetric(vertical: 16),
+                                ),
+                                child: const Text('Hapus Akun', style: TextStyle(color: Colors.red)),
+                              ),
+                            ),
+                          ],
                         ),
                       ),
-
-                      const SizedBox(height: 8),
-
-                      // Delete Account Button
-                      SizedBox(
-                        width: double.infinity,
-                        child: OutlinedButton(
-                          onPressed:
-                              Get.find<ProfileController>().onDeleteClick,
-                          style: OutlinedButton.styleFrom(
-                            padding: const EdgeInsets.symmetric(vertical: 16),
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(50),
-                            ),
-                            side: const BorderSide(color: Colors.red),
-                            backgroundColor: Colors.transparent,
-                          ),
-                          child: const Text(
-                            'Hapus Akun',
-                            style: TextStyle(
-                              color: Colors.red,
-                              fontSize: 16,
-                              fontWeight: FontWeight.w600,
-                            ),
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
+                    ),
+                    const SizedBox(height: 0),
+                  ],
                 ),
-              ],
+              ),
             ),
           ),
         ),
@@ -379,7 +350,7 @@ class _LogoutDialog extends StatelessWidget {
                   width: 60,
                   height: 60,
                   decoration: BoxDecoration(
-                    color: AppColors.primaryGreen.withValues(alpha: 0.1),
+                    color: AppColors.primaryGreen.withOpacity(0.1),
                     shape: BoxShape.circle,
                   ),
                   child: const Icon(
@@ -474,7 +445,7 @@ class _DeleteAccountDialog extends StatelessWidget {
                   width: 60,
                   height: 60,
                   decoration: BoxDecoration(
-                    color: Colors.red.withValues(alpha: 0.1),
+                    color: Colors.red.withOpacity(0.1),
                     shape: BoxShape.circle,
                   ),
                   child: const Icon(Icons.warning, size: 30, color: Colors.red),

@@ -34,7 +34,7 @@ class TncView extends GetView<TncController> {
             const Text(
               "Syarat dan Ketentuan Penggunaan",
               style: TextStyle(
-                fontSize: 24,
+                fontSize: 32,
                 fontWeight: FontWeight.bold,
                 color: Colors.black,
               ),
@@ -91,16 +91,16 @@ class TncView extends GetView<TncController> {
 
   Widget _buildSection(String title, String content) {
     return Padding(
-      padding: const EdgeInsets.only(bottom: 24.0),
+      padding: const EdgeInsets.only(bottom: 12.0),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
             title,
             style: TextStyle(
-              fontSize: 18,
+              fontSize: 24,
               fontWeight: FontWeight.bold,
-              color: AppColors.primary,
+              color: AppColors.primaryDark,
             ),
           ),
           const SizedBox(height: 8),

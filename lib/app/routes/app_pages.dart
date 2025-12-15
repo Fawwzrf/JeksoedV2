@@ -39,6 +39,8 @@ import '../modules/chat/bindings/chat_binding.dart';
 import '../modules/chat/views/chat_view.dart';
 import '../modules/rating/bindings/rating_binding.dart';
 import '../modules/rating/views/rating_view.dart';
+import '../modules/shared/profile/bindings/edit_profile_binding.dart';
+import '../modules/shared/profile/views/edit_profile_view.dart';
 
 part 'app_routes.dart';
 
@@ -150,6 +152,11 @@ class AppPages {
       name: '/rating/:driverId/:rideRequestId',
       page: () => const RatingView(),
       binding: RatingBinding(),
+    ),
+    GetPage(
+      name: Routes.editProfile,
+      page: () => const EditProfileView(),
+      binding: EditProfileBinding(),
     ),
   ];
 }
