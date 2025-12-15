@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import '../../../../data/services/ride_service.dart';
+import 'package:geocoding/geocoding.dart';
 
 enum OrderStage { search, pickupConfirm, routeConfirm, findingDriver }
 
@@ -97,6 +98,46 @@ class CreateOrderController extends GetxController {
       case OrderStage.search:
         Get.back();
         break;
+    }
+  }
+
+  Future<void> searchLocationFromText(
+    String addressQuery,
+    bool isPickup,
+  ) async {
+    if (addressQuery.isEmpty) return;
+
+    try {
+      isLoading.value = true;
+
+      List<Location> locations = await locationFromAddress(addressQuery);
+
+      if (locations.isNotEmpty) {
+        final Location location = locations.first;
+        final LatLng newLatLng = LatLng(location.latitude, location.longitude);
+
+        // Update state lokasi
+        if (isPickup) {
+          setPickupLocation(addressQuery, newLatLng);
+          print("Pickup Updated: $addressQuery ($newLatLng)");
+        } else {
+          setDestinationLocation(addressQuery, newLatLng);
+          print("Destination Updated: $addressQuery ($newLatLng)");
+        }
+
+        // Tutup bottom sheet/keyboard jika perlu
+        if (Get.isBottomSheetOpen ?? false) Get.back();
+      } else {
+        Get.snackbar("Info", "Lokasi tidak ditemukan, coba nama lain.");
+      }
+    } catch (e) {
+      print("Geocoding Error: $e");
+      Get.snackbar(
+        "Error",
+        "Gagal mencari lokasi. Pastikan koneksi internet lancar.",
+      );
+    } finally {
+      isLoading.value = false;
     }
   }
 
