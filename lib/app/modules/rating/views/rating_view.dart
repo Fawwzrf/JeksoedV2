@@ -6,6 +6,7 @@ import 'package:cached_network_image/cached_network_image.dart';
 import '../controllers/rating_controller.dart';
 import '../../../../data/models/ride_request.dart';
 import '../../../routes/app_pages.dart';
+import '../../../../utils/currency_formatter.dart';
 
 class RatingView extends GetView<RatingController> {
   const RatingView({super.key});
@@ -253,7 +254,7 @@ class RouteAndPayment extends StatelessWidget {
                 style: TextStyle(color: Colors.grey[600], fontSize: 14),
               ),
               Text(
-                'Rp${ride?.fare ?? 0}',
+                formatCurrency(ride?.fare ?? 0),
                 style: const TextStyle(
                   fontWeight: FontWeight.bold,
                   fontSize: 14,

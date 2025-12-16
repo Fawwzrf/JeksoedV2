@@ -1,5 +1,7 @@
 // filepath: lib/data/models/driver_profile.dart
 
+import '../../utils/currency_formatter.dart';
+
 class DriverProfile {
   final String name;
   final String licensePlate;
@@ -27,7 +29,7 @@ class DriverProfile {
       name: data['name'] ?? 'Driver',
       licensePlate: data['licensePlate'] ?? '',
       photoUrl: data['photoUrl'],
-      balance: 'Rp ${data['balance'] ?? 0}',
+      balance: formatCurrency(data['balance'] ?? 0),
       rating: averageRating.toStringAsFixed(1),
       orderCount: '${data['completedTrips'] ?? 0}',
     );

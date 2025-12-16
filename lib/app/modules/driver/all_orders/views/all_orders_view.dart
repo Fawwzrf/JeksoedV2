@@ -5,6 +5,7 @@ import 'package:get/get.dart';
 import '../controllers/all_orders_controller.dart';
 import '../../../../../data/models/ride_request.dart';
 import '../../../../../utils/app_colors.dart';
+import '../../../../../utils/currency_formatter.dart';
 
 class AllOrdersView extends GetView<AllOrdersController> {
   const AllOrdersView({super.key});
@@ -18,7 +19,7 @@ class AllOrdersView extends GetView<AllOrdersController> {
           'Semua Order',
           style: TextStyle(fontWeight: FontWeight.bold, color: Colors.white),
         ),
-        backgroundColor: AppColors.primaryGreen,
+        backgroundColor: AppColors.primaryDark,
         elevation: 0,
         centerTitle: true,
         leading: IconButton(
@@ -39,7 +40,7 @@ class AllOrdersView extends GetView<AllOrdersController> {
             width: double.infinity,
             padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(
-              color: AppColors.primaryGreen,
+              color: AppColors.primaryDark,
               borderRadius: const BorderRadius.only(
                 bottomLeft: Radius.circular(20),
                 bottomRight: Radius.circular(20),
@@ -72,7 +73,7 @@ class AllOrdersView extends GetView<AllOrdersController> {
               if (controller.isLoading.value) {
                 return const Center(
                   child: CircularProgressIndicator(
-                    color: AppColors.primaryGreen,
+                    color: AppColors.primary,
                   ),
                 );
               }
@@ -83,7 +84,7 @@ class AllOrdersView extends GetView<AllOrdersController> {
 
               return RefreshIndicator(
                 onRefresh: () async => controller.refreshRides(),
-                color: AppColors.primaryGreen,
+                color: AppColors.primary,
                 child: ListView.builder(
                   padding: const EdgeInsets.all(16),
                   itemCount: controller.rideRequests.length,
@@ -126,8 +127,8 @@ class AllOrdersView extends GetView<AllOrdersController> {
             icon: const Icon(Icons.refresh),
             label: const Text('Refresh'),
             style: ElevatedButton.styleFrom(
-              backgroundColor: AppColors.primaryGreen,
-              foregroundColor: Colors.white,
+              backgroundColor: AppColors.primary,
+              foregroundColor: Colors.black,
               padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(25),
@@ -161,13 +162,13 @@ class AllOrdersView extends GetView<AllOrdersController> {
                       vertical: 6,
                     ),
                     decoration: BoxDecoration(
-                      color: AppColors.primaryGreen.withOpacity(0.1),
+                      color: AppColors.primary.withOpacity(0.1),
                       borderRadius: BorderRadius.circular(20),
                     ),
                     child: Text(
-                      'Rp ${rideRequest.fare}',
+                      formatCurrency(rideRequest.fare ?? 0),
                       style: const TextStyle(
-                        color: AppColors.primaryGreen,
+                        color: AppColors.primaryDark,
                         fontWeight: FontWeight.bold,
                         fontSize: 16,
                       ),
@@ -189,10 +190,10 @@ class AllOrdersView extends GetView<AllOrdersController> {
                 children: [
                   CircleAvatar(
                     radius: 20,
-                    backgroundColor: AppColors.primaryGreen.withOpacity(0.1),
+                    backgroundColor: AppColors.primary.withOpacity(0.1),
                     child: const Icon(
                       Icons.person,
-                      color: AppColors.primaryGreen,
+                      color: AppColors.primary,
                       size: 20,
                     ),
                   ),
@@ -249,7 +250,7 @@ class AllOrdersView extends GetView<AllOrdersController> {
                 children: [
                   _buildRouteItem(
                     icon: Icons.radio_button_checked,
-                    iconColor: AppColors.primaryGreen,
+                    iconColor: AppColors.info,
                     address: rideRequest.pickupAddress,
                     isDestination: false,
                   ),
@@ -326,11 +327,11 @@ class AllOrdersView extends GetView<AllOrdersController> {
                         ? null
                         : () => controller.acceptRideRequest(rideRequest),
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: AppColors.primaryGreen,
-                      foregroundColor: Colors.white,
+                      backgroundColor: AppColors.primary,
+                      foregroundColor: Colors.black,
                       padding: const EdgeInsets.symmetric(vertical: 14),
                       shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(8),
+                        borderRadius: BorderRadius.circular(25),
                       ),
                       elevation: 2,
                     ),
@@ -410,7 +411,7 @@ class AllOrdersView extends GetView<AllOrdersController> {
   }) {
     return Column(
       children: [
-        Icon(icon, color: AppColors.primaryGreen, size: 18),
+        Icon(icon, color: AppColors.primary, size: 18),
         const SizedBox(height: 4),
         Text(
           value,

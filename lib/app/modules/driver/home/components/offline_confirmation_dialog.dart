@@ -88,7 +88,7 @@ class OfflineConfirmationDialog extends StatelessWidget {
                       side: BorderSide(color: Colors.grey.shade400, width: 1.5),
                       padding: const EdgeInsets.symmetric(vertical: 14),
                       shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(10),
+                        borderRadius: BorderRadius.circular(25),
                       ),
                     ),
                     child: Text(
@@ -110,7 +110,7 @@ class OfflineConfirmationDialog extends StatelessWidget {
                       foregroundColor: Colors.white,
                       padding: const EdgeInsets.symmetric(vertical: 14),
                       shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(10),
+                        borderRadius: BorderRadius.circular(25),
                       ),
                       elevation: 2,
                     ),

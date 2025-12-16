@@ -1,8 +1,10 @@
 // filepath: lib/app/modules/driver/home/components/ride_request_popup.dart
 
 import 'package:flutter/material.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 import '../../../../../data/models/ride_request.dart';
 import '../../../../../utils/app_colors.dart';
+import '../../../../../utils/currency_formatter.dart';
 
 class RideRequestPopup extends StatelessWidget {
   final RideRequest rideRequest;
@@ -41,13 +43,17 @@ class RideRequestPopup extends StatelessWidget {
                 Container(
                   padding: const EdgeInsets.all(8),
                   decoration: BoxDecoration(
-                    color: AppColors.primaryGreen.withOpacity(0.1),
+                    color: AppColors.primary.withOpacity(0.1),
                     borderRadius: BorderRadius.circular(8),
                   ),
-                  child: const Icon(
-                    Icons.local_taxi,
-                    color: AppColors.primaryGreen,
-                    size: 24,
+                  child: SvgPicture.asset(
+                    'assets/images/motor_icon.svg',
+                    width: 24,
+                    height: 24,
+                    colorFilter: const ColorFilter.mode(
+                      AppColors.primary,
+                      BlendMode.srcIn,
+                    ),
                   ),
                 ),
                 const SizedBox(width: 12),
@@ -64,11 +70,11 @@ class RideRequestPopup extends StatelessWidget {
                         ),
                       ),
                       Text(
-                        'Rp ${rideRequest.fare}',
+                        formatCurrency(rideRequest.fare ?? 0),
                         style: TextStyle(
                           fontSize: 16,
                           fontWeight: FontWeight.w600,
-                          color: AppColors.primaryGreen,
+                          color: AppColors.primaryDark,
                         ),
                       ),
                     ],
@@ -110,10 +116,10 @@ class RideRequestPopup extends StatelessWidget {
                 children: [
                   CircleAvatar(
                     radius: 20,
-                    backgroundColor: AppColors.primaryGreen.withOpacity(0.1),
+                    backgroundColor: AppColors.primary.withOpacity(0.1),
                     child: const Icon(
                       Icons.person,
-                      color: AppColors.primaryGreen,
+                      color: AppColors.primary,
                       size: 20,
                     ),
                   ),
@@ -157,7 +163,7 @@ class RideRequestPopup extends StatelessWidget {
               children: [
                 _buildRouteItem(
                   icon: Icons.radio_button_checked,
-                  iconColor: AppColors.primaryGreen,
+                  iconColor: AppColors.info,
                   label: 'Jemput dari',
                   address: rideRequest.pickupAddress,
                 ),
@@ -233,10 +239,10 @@ class RideRequestPopup extends StatelessWidget {
                     onPressed: onReject,
                     style: ElevatedButton.styleFrom(
                       backgroundColor: Colors.grey.shade400,
-                      foregroundColor: Colors.black87,
+                      foregroundColor: Colors.white,
                       padding: const EdgeInsets.symmetric(vertical: 14),
                       shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(10),
+                        borderRadius: BorderRadius.circular(25),
                       ),
                     ),
                     child: const Text(
@@ -253,11 +259,11 @@ class RideRequestPopup extends StatelessWidget {
                   child: ElevatedButton(
                     onPressed: onAccept,
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: AppColors.primaryGreen,
-                      foregroundColor: Colors.white,
+                      backgroundColor: AppColors.primary,
+                      foregroundColor: Colors.black,
                       padding: const EdgeInsets.symmetric(vertical: 14),
                       shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(10),
+                        borderRadius: BorderRadius.circular(25),
                       ),
                     ),
                     child: const Text(

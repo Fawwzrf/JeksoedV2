@@ -6,6 +6,7 @@ import 'package:cached_network_image/cached_network_image.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../controllers/chat_controller.dart';
 import '../../../../data/models/message.dart';
+import '../../../../../utils/app_colors.dart';
 
 class ChatView extends GetView<ChatController> {
   const ChatView({super.key});
@@ -62,11 +63,13 @@ class ChatAppBar extends StatelessWidget implements PreferredSizeWidget {
   Widget build(BuildContext context) {
     return AppBar(
       elevation: 4,
-      surfaceTintColor: Colors.white,
-      backgroundColor: Colors.white,
+      surfaceTintColor: Colors.black,
+      backgroundColor: AppColors.primary,
+      titleSpacing: 0,
       leading: IconButton(
         icon: const Icon(Icons.arrow_back),
         onPressed: onBackPressed,
+        color: Colors.black,
       ),
       title: Row(
         children: [
@@ -84,7 +87,7 @@ class ChatAppBar extends StatelessWidget implements PreferredSizeWidget {
           Expanded(
             child: Text(
               name,
-              style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+              style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: Colors.black),
               overflow: TextOverflow.ellipsis,
             ),
           ),

@@ -237,7 +237,7 @@ class TripCompletedScreenUI extends StatelessWidget {
               child: Text(
                 'Detail Pesanan >',
                 style: TextStyle(
-                  color: AppColors.primaryGreen,
+                  color: AppColors.primary,
                   fontWeight: FontWeight.bold,
                 ),
               ),
