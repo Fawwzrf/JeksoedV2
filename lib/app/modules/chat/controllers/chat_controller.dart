@@ -46,31 +46,28 @@ class ChatController extends GetxController {
   final SupabaseClient _supabase = Supabase.instance.client;
   final ImagePicker _imagePicker = ImagePicker();
 
-  // rideId akan di-set di onInit agar Get.arguments tersedia
   late final String rideId;
 
   final TextEditingController messageController = TextEditingController();
   final ScrollController scrollController = ScrollController();
 
-  // UI State (Observable)
   final Rx<ChatUiState> uiState = ChatUiState().obs;
-
   StreamSubscription? _chatSubscription;
 
   @override
   void onInit() {
     super.onInit();
+
+    // Logika pengambilan ID yang sudah diperbaiki sebelumnya
     String? idFromParam = Get.parameters['rideRequestId'];
     final arg = Get.arguments;
+
     if (idFromParam != null && idFromParam.isNotEmpty) {
       rideId = idFromParam;
     } else if (arg is String && arg.isNotEmpty) {
       rideId = arg;
     } else {
-      // Jika keduanya kosong, baru lempar error
-      throw Exception(
-        'ChatController: rideId tidak ditemukan di Parameters maupun Arguments',
-      );
+      throw Exception('ChatController: rideId tidak ditemukan.');
     }
 
     _listenForMessages();
@@ -85,130 +82,118 @@ class ChatController extends GetxController {
     super.onClose();
   }
 
+  // --- FUNGSI SCROLL OTOMATIS KE BAWAH ---
+  void _scrollToBottom() {
+    if (scrollController.hasClients) {
+      // Beri sedikit delay agar UI sempat merender item baru
+      Future.delayed(const Duration(milliseconds: 300), () {
+        if (scrollController.hasClients) {
+          scrollController.animateTo(
+            scrollController.position.maxScrollExtent,
+            duration: const Duration(milliseconds: 300),
+            curve: Curves.easeOut,
+          );
+        }
+      });
+    }
+  }
+
   void _listenForMessages() {
     _chatSubscription?.cancel();
     _chatSubscription = _supabase
         .from('messages')
         .stream(primaryKey: ['id'])
         .eq('ride_id', rideId)
-        .listen(
-          (List<Map<String, dynamic>> data) {
-            try {
-              // Salin data mentah dan pastikan tipe Map<String, dynamic>
-              final rawList = data
-                  .map((e) => Map<String, dynamic>.from(e))
-                  .toList();
+        .listen((List<Map<String, dynamic>> data) {
+          try {
+            final rawList = data
+                .map((e) => Map<String, dynamic>.from(e))
+                .toList();
 
-              DateTime toDate(dynamic v) {
-                if (v == null) return DateTime.fromMillisecondsSinceEpoch(0);
-                if (v is DateTime) return v;
-                if (v is int) return DateTime.fromMillisecondsSinceEpoch(v);
-                if (v is String) {
-                  final s = v.trim();
-                  if (s.isEmpty) return DateTime.fromMillisecondsSinceEpoch(0);
-                  try {
-                    return DateTime.parse(s);
-                  } catch (_) {}
-                  try {
-                    return DateTime.fromMillisecondsSinceEpoch(int.parse(s));
-                  } catch (_) {}
-                }
-                return DateTime.fromMillisecondsSinceEpoch(0);
+            // Helper parsing tanggal yang kuat
+            DateTime toDate(dynamic v) {
+              if (v == null) return DateTime.fromMillisecondsSinceEpoch(0);
+              if (v is DateTime) return v;
+              if (v is String) {
+                return DateTime.tryParse(v) ??
+                    DateTime.fromMillisecondsSinceEpoch(0);
               }
-
-              // Normalisasi setiap item agar cocok dengan Message.fromJson
-              final messageList = rawList.map((json) {
-                final m = Map<String, dynamic>.from(json);
-
-                // normalisasi timestamp --> createdAt (DateTime)
-                final createdRaw =
-                    m['created_at'] ?? m['createdAt'] ?? m['ts'] ?? m['time'];
-                m['createdAt'] = toDate(createdRaw);
-
-                // normalisasi nama field lain yang sering berbeda
-                if (m.containsKey('image_url')) m['imageUrl'] = m['image_url'];
-                if (m.containsKey('sender_id')) m['senderId'] = m['sender_id'];
-                if (m.containsKey('ride_id')) m['rideId'] = m['ride_id'];
-                if (m.containsKey('photo_url')) m['photoUrl'] = m['photo_url'];
-
-                return Message.fromJson(m);
-              }).toList();
-
-              // pastikan terurut berdasarkan createdAt (asumsikan Message.createdAt adalah DateTime)
-              messageList.sort((a, b) => a.createdAt.compareTo(b.createdAt));
-
-              uiState.value = uiState.value.copyWith(messages: messageList);
-
-              // Auto-scroll ke bawah
-              Future.delayed(const Duration(milliseconds: 100), () {
-                if (scrollController.hasClients) {
-                  scrollController.jumpTo(
-                    scrollController.position.maxScrollExtent,
-                  );
-                }
-              });
-            } catch (e) {
-              print('Error processing incoming messages: $e');
+              return DateTime.fromMillisecondsSinceEpoch(0);
             }
-          },
-          onError: (err) {
-            print('Chat stream error: $err');
-          },
-        );
+
+            final messageList = rawList.map((json) {
+              final m = Map<String, dynamic>.from(json);
+
+              final createdRaw = m['created_at'] ?? m['createdAt'] ?? m['ts'];
+              m['createdAt'] = toDate(createdRaw);
+
+              if (m.containsKey('image_url')) m['imageUrl'] = m['image_url'];
+              if (m.containsKey('sender_id')) m['senderId'] = m['sender_id'];
+              if (m.containsKey('ride_id')) m['rideId'] = m['ride_id'];
+
+              return Message.fromJson(m);
+            }).toList();
+
+            // PERBAIKAN SORTING: Pastikan yang lama di atas (Indeks 0), baru di bawah
+            messageList.sort((a, b) => a.createdAt.compareTo(b.createdAt));
+
+            uiState.value = uiState.value.copyWith(messages: messageList);
+
+            // Auto Scroll setiap kali data berubah (termasuk saat gambar masuk)
+            _scrollToBottom();
+          } catch (e) {
+            print('Error processing messages: $e');
+          }
+        }, onError: (err) => print('Chat stream error: $err'));
   }
 
   Future<void> _loadUsersInfo() async {
+    // ... (kode ini tetap sama, tidak perlu diubah) ...
     try {
       final currentUserId = _supabase.auth.currentUser?.id;
       if (currentUserId == null) return;
 
-      // Ambil data Ride untuk mengetahui siapa driver dan siapa passenger
       final rideData = await _supabase
           .from('ride_requests')
           .select('passenger_id, driver_id')
           .eq('id', rideId)
           .maybeSingle();
 
-      final passengerId = rideData?['passenger_id'];
-      final driverId = rideData?['driver_id'];
-
-      // Tentukan ID lawan bicara
+      if (rideData == null) return;
+      final passengerId = rideData['passenger_id'];
+      final driverId = rideData['driver_id'];
       final otherUserId = (currentUserId == passengerId)
           ? driverId
           : passengerId;
 
-      // Ambil Foto Profil User Saat Ini
       final currentUserRes = await _supabase
           .from('users')
           .select('photo_url')
           .eq('id', currentUserId)
           .maybeSingle();
 
-      final currentUserPhoto = currentUserRes?['photo_url'];
+      String otherName = 'User';
+      String? otherPhoto;
 
       if (otherUserId != null) {
-        // Ambil Data Lawan Bicara
         final otherUserRes = await _supabase
             .from('users')
             .select('name, photo_url')
             .eq('id', otherUserId)
             .maybeSingle();
-
-        uiState.value = uiState.value.copyWith(
-          otherUserName: otherUserRes?['name'] ?? 'User',
-          otherUserPhotoUrl: otherUserRes?['photo_url'],
-          currentUserPhotoUrl: currentUserPhoto,
-        );
-      } else {
-        uiState.value = uiState.value.copyWith(
-          currentUserPhotoUrl: currentUserPhoto,
-        );
+        if (otherUserRes != null) {
+          otherName = otherUserRes['name'] ?? 'User';
+          otherPhoto = otherUserRes['photo_url'];
+        }
       }
+
+      uiState.value = uiState.value.copyWith(
+        otherUserName: otherName,
+        otherUserPhotoUrl: otherPhoto,
+        currentUserPhotoUrl: currentUserRes?['photo_url'],
+      );
     } catch (e) {
       print('Error loading users info: $e');
-      uiState.value = uiState.value.copyWith(
-        otherUserName: 'Info tidak tersedia',
-      );
     }
   }
 
@@ -223,7 +208,6 @@ class ChatController extends GetxController {
     final currentUserId = _supabase.auth.currentUser?.id;
     if (currentUserId == null) return;
 
-    // Bersihkan input segera agar UI responsif
     messageController.clear();
     uiState.value = uiState.value.copyWith(messageText: '');
 
@@ -233,11 +217,13 @@ class ChatController extends GetxController {
         'sender_id': currentUserId,
         'content': textToSend,
         'type': 'text',
+        // PERBAIKAN: Kirim waktu dari HP agar tidak null/delay
         'created_at': DateTime.now().toIso8601String(),
       });
+      _scrollToBottom(); // Scroll manual saat kirim
     } catch (e) {
       print('Error sending message: $e');
-      Get.snackbar('Error', 'Gagal mengirim pesan');
+      Get.snackbar('Gagal', 'Pesan tidak terkirim');
     }
   }
 
@@ -245,7 +231,7 @@ class ChatController extends GetxController {
     try {
       final XFile? image = await _imagePicker.pickImage(
         source: ImageSource.gallery,
-        imageQuality: 70,
+        imageQuality: 50, // Kompres biar cepat upload
       );
 
       if (image != null) {
@@ -253,7 +239,6 @@ class ChatController extends GetxController {
       }
     } catch (e) {
       print('Error picking image: $e');
-      Get.snackbar('Error', 'Gagal memilih gambar');
     }
   }
 
@@ -268,7 +253,8 @@ class ChatController extends GetxController {
       final fileName =
           '$rideId/${DateTime.now().millisecondsSinceEpoch}.$fileExt';
 
-      // Upload ke Supabase Storage (Bucket: 'chat-attachments')
+      // Upload ke bucket chat-attachments
+      // Pastikan bucket 'chat-attachments' sudah dibuat di Supabase Storage & Public
       await _supabase.storage
           .from('chat-attachments')
           .upload(
@@ -277,40 +263,24 @@ class ChatController extends GetxController {
             fileOptions: const FileOptions(upsert: true),
           );
 
-      // 2. Dapatkan URL Public
-      final dynamic publicRes = _supabase.storage
+      final publicUrl = _supabase.storage
           .from('chat-attachments')
           .getPublicUrl(fileName);
 
-      String imageUrl = '';
-      if (publicRes is String) {
-        imageUrl = publicRes;
-      } else if (publicRes is Map) {
-        imageUrl =
-            (publicRes['publicUrl'] ??
-                    publicRes['public_url'] ??
-                    publicRes['publicurl'] ??
-                    '')
-                .toString();
-      } else {
-        imageUrl = publicRes?.toString() ?? '';
-      }
-
-      if (imageUrl.isEmpty) {
-        throw Exception('Gagal mendapatkan public URL gambar');
-      }
-
-      // Simpan Pesan Gambar ke Database
+      // Insert ke database
       await _supabase.from('messages').insert({
         'ride_id': rideId,
         'sender_id': currentUserId,
-        'content': '',
-        'image_url': imageUrl,
+        'content': '', // Kosongkan content kalau gambar
+        'image_url': publicUrl,
         'type': 'image',
+        'created_at': DateTime.now().toIso8601String(),
       });
+
+      _scrollToBottom(); // Scroll setelah upload sukses
     } catch (e) {
       print('Error sending image: $e');
-      Get.snackbar('Error', 'Gagal mengirim gambar: $e');
+      Get.snackbar('Error', 'Gagal kirim gambar: $e');
     } finally {
       uiState.value = uiState.value.copyWith(isUploading: false);
     }
