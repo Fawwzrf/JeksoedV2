@@ -23,8 +23,8 @@ class StatusIndicator extends StatelessWidget {
             gradient: LinearGradient(
               colors: isOnline
                   ? [
-                      AppColors.primaryGreen,
-                      AppColors.primaryGreen.withOpacity(0.8),
+                      AppColors.primary,
+                      AppColors.primary.withOpacity(0.8),
                     ]
                   : [Colors.grey.shade400, Colors.grey.shade300],
               begin: Alignment.centerLeft,
@@ -53,7 +53,7 @@ class StatusIndicator extends StatelessWidget {
               Text(
                 isOnline ? 'ONLINE' : 'OFFLINE',
                 style: const TextStyle(
-                  color: Colors.white,
+                  color: Colors.black,
                   fontSize: 16,
                   fontWeight: FontWeight.bold,
                   letterSpacing: 1.2,

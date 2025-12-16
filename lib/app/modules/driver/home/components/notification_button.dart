@@ -36,7 +36,7 @@ class NotificationButton extends StatelessWidget {
                 const Center(
                   child: Icon(
                     Icons.notifications_outlined,
-                    color: AppColors.primaryGreen,
+                    color: AppColors.primary,
                     size: 24,
                   ),
                 ),

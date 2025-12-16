@@ -80,6 +80,21 @@ class DriverHomeView extends GetView<DriverHomeController> {
                 : const SizedBox.shrink(),
           ),
 
+          // My Location Button (Bottom Right)
+          Positioned(
+            bottom: 280, // Above driver info card
+            right: 16,
+            child: FloatingActionButton(
+              onPressed: controller.centerMapToCurrentLocation,
+              backgroundColor: Colors.white,
+              elevation: 4,
+              child: const Icon(
+                Icons.my_location,
+                color: Colors.black,
+              ),
+            ),
+          ),
+
           // Offline Confirmation Dialog
           Obx(
             () => controller.showOfflineDialog.value

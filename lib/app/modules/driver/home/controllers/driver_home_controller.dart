@@ -54,6 +54,19 @@ class DriverHomeController extends GetxController {
     _mapController = controller;
   }
 
+  void centerMapToCurrentLocation() {
+    if (_mapController != null) {
+      _mapController!.animateCamera(
+        CameraUpdate.newCameraPosition(
+          CameraPosition(
+            target: driverLocation.value,
+            zoom: 16,
+          ),
+        ),
+      );
+    }
+  }
+
   Future<void> _initializeLocation() async {
     try {
       LocationPermission permission = await Geolocator.checkPermission();

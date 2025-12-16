@@ -184,7 +184,7 @@ class _TripScreenLayoutState extends State<TripScreenLayout> {
           // Google Map
           GoogleMap(
             initialCameraPosition: const CameraPosition(
-              target: LatLng(-7.4298, 109.2481), // Default to Purwokerto
+              target: LatLng(-7.4298, 109.2481),
               zoom: 14,
             ),
             markers: markers,
@@ -223,10 +223,10 @@ class _TripScreenLayoutState extends State<TripScreenLayout> {
             ),
           ),
 
-          // Bottom Sheet
-          Positioned(bottom: 0, left: 0, right: 0, child: _buildBottomSheet()),
+          // Bottom Sheet (hide when payment confirmation is showing)
+          if (!(request?.status == 'completed' && widget.uiState.isDriver))
+            Positioned(bottom: 0, left: 0, right: 0, child: _buildBottomSheet()),
 
-          // Payment Confirmation Card (only for completed trips)
           if (request?.status == 'completed' && widget.uiState.isDriver)
             Positioned(
               bottom: 100,

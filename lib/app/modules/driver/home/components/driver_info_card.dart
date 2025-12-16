@@ -39,18 +39,13 @@ class DriverInfoCard extends StatelessWidget {
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              // Profile Section
+              // Profile Section with Power Icon
               _buildProfileSection(),
 
               const SizedBox(height: 16),
 
               // Stats Section
               _buildStatsSection(),
-
-              const SizedBox(height: 20),
-
-              // Toggle Button
-              _buildToggleButton(),
             ],
           ),
         ),
@@ -67,7 +62,7 @@ class DriverInfoCard extends StatelessWidget {
           height: 60,
           decoration: BoxDecoration(
             shape: BoxShape.circle,
-            border: Border.all(color: AppColors.primaryGreen, width: 3),
+            border: Border.all(color: AppColors.primary, width: 3),
           ),
           child: ClipOval(
             child: isLoadingProfile
@@ -113,6 +108,34 @@ class DriverInfoCard extends StatelessWidget {
             ],
           ),
         ),
+
+        // Power Icon Button (Top Right)
+        Container(
+          width: 48,
+          height: 48,
+          decoration: BoxDecoration(
+            color: isOnline
+                ? Colors.red.shade500
+                : AppColors.primary,
+            shape: BoxShape.circle,
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withOpacity(0.1),
+                blurRadius: 8,
+                offset: const Offset(0, 2),
+              ),
+            ],
+          ),
+          child: IconButton(
+            onPressed: onToggleStatus,
+            icon: Icon(
+              Icons.power_settings_new,
+              color: Colors.black,
+              size: 24,
+            ),
+            padding: EdgeInsets.zero,
+          ),
+        ),
       ],
     );
   }
@@ -120,10 +143,10 @@ class DriverInfoCard extends StatelessWidget {
   Widget _buildDefaultAvatar() {
     return Container(
       decoration: BoxDecoration(
-        color: AppColors.primaryGreen.withOpacity(0.1),
+        color: AppColors.primary.withOpacity(0.1),
         shape: BoxShape.circle,
       ),
-      child: const Icon(Icons.person, color: AppColors.primaryGreen, size: 30),
+      child: const Icon(Icons.person, color: AppColors.primary, size: 30),
     );
   }
 
@@ -191,44 +214,6 @@ class DriverInfoCard extends StatelessWidget {
           style: TextStyle(fontSize: 12, color: Colors.grey.shade600),
         ),
       ],
-    );
-  }
-
-  Widget _buildToggleButton() {
-    return SizedBox(
-      width: double.infinity,
-      child: ElevatedButton(
-        onPressed: onToggleStatus,
-        style: ElevatedButton.styleFrom(
-          backgroundColor: isOnline
-              ? Colors.red.shade500
-              : AppColors.primaryGreen,
-          foregroundColor: Colors.white,
-          padding: const EdgeInsets.symmetric(vertical: 16),
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(12),
-          ),
-          elevation: 2,
-        ),
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(
-              isOnline ? Icons.power_settings_new : Icons.play_arrow,
-              size: 20,
-            ),
-            const SizedBox(width: 8),
-            Text(
-              isOnline ? 'GO OFFLINE' : 'GO ONLINE',
-              style: const TextStyle(
-                fontSize: 16,
-                fontWeight: FontWeight.bold,
-                letterSpacing: 0.5,
-              ),
-            ),
-          ],
-        ),
-      ),
     );
   }
 }
