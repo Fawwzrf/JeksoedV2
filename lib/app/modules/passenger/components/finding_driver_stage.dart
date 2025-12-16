@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 import '../../../../../utils/app_colors.dart';
 
 class FindingDriverStage extends StatefulWidget {
@@ -38,6 +39,11 @@ class _FindingDriverStageState extends State<FindingDriverStage>
 
   @override
   Widget build(BuildContext context) {
+    final screenWidth = MediaQuery.of(context).size.width;
+    final iconSize = 32.0;
+    final padding = 32.0; // 16 * 2 for left and right padding
+    final travelDistance = screenWidth - iconSize - padding;
+
     return Padding(
       padding: const EdgeInsets.all(16),
       child: Column(
@@ -53,42 +59,43 @@ class _FindingDriverStageState extends State<FindingDriverStage>
           ),
           const SizedBox(height: 32),
 
-          // Animated Motor Icon
+          // Motor Animation with Progress Bar
           SizedBox(
             width: double.infinity,
-            height: 80,
+            height: 60,
             child: AnimatedBuilder(
               animation: _animation,
               builder: (context, child) {
-                return Stack(
+                return Column(
                   children: [
-                    // Track line
-                    Positioned(
-                      top: 40,
-                      left: 0,
-                      right: 0,
-                      child: Container(height: 2, color: Colors.grey.shade300),
+                    // Motor Icon
+                    Align(
+                      alignment: Alignment.centerLeft,
+                      child: Padding(
+                        padding: EdgeInsets.only(left: travelDistance * _animation.value),
+                        child: Container(
+                          width: iconSize,
+                          height: iconSize,
+                          child: Center(
+                            child: SvgPicture.asset(
+                              'assets/images/motor_icon.svg',
+                              width: 32,
+                              height: 32,
+                              
+                            ),
+                          ),
+                        ),
+                      ),
                     ),
-                    // Moving motor icon
-                    Positioned(
-                      top: 24,
-                      left:
-                          (_animation.value *
-                          (MediaQuery.of(context).size.width -
-                              64 -
-                              32)), // 32 is padding
-                      child: Container(
-                        width: 32,
-                        height: 32,
-                        decoration: BoxDecoration(
-                          color: AppColors.primary,
-                          shape: BoxShape.circle,
-                        ),
-                        child: const Icon(
-                          Icons.motorcycle,
-                          color: Colors.white,
-                          size: 20,
-                        ),
+                    const SizedBox(height: 4),
+                    // Progress Bar
+                    ClipRRect(
+                      borderRadius: BorderRadius.circular(4),
+                      child: LinearProgressIndicator(
+                        value: _animation.value,
+                        backgroundColor: Colors.grey.shade300,
+                        color: AppColors.primary,
+                        minHeight: 8,
                       ),
                     ),
                   ],
@@ -99,32 +106,33 @@ class _FindingDriverStageState extends State<FindingDriverStage>
 
           const SizedBox(height: 32),
 
-          // Loading indicator
-          CircularProgressIndicator(
-            valueColor: AlwaysStoppedAnimation<Color>(AppColors.primary),
-          ),
-
-          const SizedBox(height: 32),
-
           // Cancel Button
           SizedBox(
             width: double.infinity,
-            child: OutlinedButton(
+            child: ElevatedButton(
               onPressed: widget.onCancelClick,
-              style: OutlinedButton.styleFrom(
-                side: const BorderSide(color: Colors.red),
-                padding: const EdgeInsets.symmetric(vertical: 12),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: const Color(0xFFFFFBEB), // Light yellow
+                foregroundColor: Colors.black,
+                padding: const EdgeInsets.symmetric(vertical: 14),
                 shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
+                  borderRadius: BorderRadius.circular(24),
                 ),
+                elevation: 0,
               ),
-              child: const Text(
-                "Batal",
-                style: TextStyle(
-                  color: Colors.red,
-                  fontSize: 16,
-                  fontWeight: FontWeight.w600,
-                ),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: const [
+                  Icon(Icons.close, size: 20, color: Colors.black),
+                  SizedBox(width: 8),
+                  Text(
+                    "Batalkan Pesanan",
+                    style: TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ],
               ),
             ),
           ),

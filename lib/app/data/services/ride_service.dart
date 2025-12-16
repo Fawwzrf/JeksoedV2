@@ -179,14 +179,8 @@ class RideService extends GetxService {
       _currentRide.value = newRide;
       _listenToCurrentRide(newRide.id);
 
-      Get.snackbar(
-        'Success',
-        'Permintaan ride telah dikirim',
-        snackPosition: SnackPosition.BOTTOM,
-        backgroundColor: AppColors.success,
-        colorText: AppColors.white,
-      );
-
+      // Removed success snackbar - handled by UI
+      
       return true;
     } catch (e) {
       print("Request ride error: $e");

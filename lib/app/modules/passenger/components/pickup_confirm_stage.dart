@@ -122,11 +122,12 @@ class PickupConfirmStage extends StatelessWidget {
             child: ElevatedButton(
               onPressed: isRouteLoading ? null : onProceedClick,
               style: ElevatedButton.styleFrom(
-                backgroundColor: AppColors.primary,
+                backgroundColor: const Color(0xFFFFC107), // Yellow
                 foregroundColor: Colors.black,
                 shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
+                  borderRadius: BorderRadius.circular(24),
                 ),
+                elevation: 0,
               ),
               child: isRouteLoading
                   ? const SizedBox(

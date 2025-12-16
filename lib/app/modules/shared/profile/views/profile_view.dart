@@ -1,4 +1,3 @@
-
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import '../controllers/profile_controller.dart';
@@ -385,6 +384,7 @@ class _LogoutDialog extends StatelessWidget {
                         onPressed: onDismiss,
                         style: OutlinedButton.styleFrom(
                           padding: const EdgeInsets.symmetric(vertical: 12),
+                          shape: const StadiumBorder(), // Rounded
                         ),
                         child: const Text(
                           'Ga jadi logout',
@@ -399,6 +399,7 @@ class _LogoutDialog extends StatelessWidget {
                         style: ElevatedButton.styleFrom(
                           backgroundColor: const Color(0xFFFFC107),
                           padding: const EdgeInsets.symmetric(vertical: 12),
+                          shape: const StadiumBorder(), // Rounded
                         ),
                         child: const Text(
                           'Logout',
@@ -476,6 +477,7 @@ class _DeleteAccountDialog extends StatelessWidget {
                         onPressed: onDismiss,
                         style: OutlinedButton.styleFrom(
                           padding: const EdgeInsets.symmetric(vertical: 12),
+                          shape: const StadiumBorder(), // Rounded
                         ),
                         child: const Text(
                           'Ga jadi',
@@ -490,6 +492,7 @@ class _DeleteAccountDialog extends StatelessWidget {
                         style: ElevatedButton.styleFrom(
                           backgroundColor: Colors.red,
                           padding: const EdgeInsets.symmetric(vertical: 12),
+                          shape: const StadiumBorder(), // Rounded
                         ),
                         child: const Text(
                           'Hapus Akun',

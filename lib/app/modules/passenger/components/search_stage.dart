@@ -1,28 +1,20 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 import '../../../../../utils/app_colors.dart';
+import 'package:jeksoedv2/data/models/place_models.dart';
 
-class SavedPlace {
-  final String title;
-  final String address;
-  final String distance;
-
-  SavedPlace({
-    required this.title,
-    required this.address,
-    required this.distance,
-  });
-}
-
-class SearchStage extends StatefulWidget {
+class SearchStage extends StatelessWidget {
   final String pickupQuery;
   final String destinationQuery;
-  final List<dynamic> predictions;
+  final List<PlacePrediction> predictions;
   final List<SavedPlace> savedPlaces;
+  final Function(String) onPickupQueryChanged;
   final Function(String) onDestinationQueryChanged;
-  final Function(dynamic) onPredictionSelected;
+  final Function(PlacePrediction) onPredictionSelected;
   final Function(SavedPlace) onSavedPlaceSelected;
   final VoidCallback onTextFieldFocus;
   final VoidCallback onLocationClick;
+  final Function({required bool isPickup}) clearQuery;
 
   const SearchStage({
     super.key,
@@ -30,249 +22,238 @@ class SearchStage extends StatefulWidget {
     required this.destinationQuery,
     required this.predictions,
     required this.savedPlaces,
+    required this.onPickupQueryChanged,
     required this.onDestinationQueryChanged,
     required this.onPredictionSelected,
     required this.onSavedPlaceSelected,
     required this.onTextFieldFocus,
     required this.onLocationClick,
-  });
-
-  @override
-  State<SearchStage> createState() => _SearchStageState();
-}
-
-class _SearchStageState extends State<SearchStage> {
-  final TextEditingController _destinationController = TextEditingController();
-  final FocusNode _focusNode = FocusNode();
-
-  @override
-  void initState() {
-    super.initState();
-    _destinationController.text = widget.destinationQuery;
-    _destinationController.addListener(() {
-      widget.onDestinationQueryChanged(_destinationController.text);
-    });
-  }
-
-  @override
-  void dispose() {
-    _destinationController.dispose();
-    _focusNode.dispose();
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        // Search TextField
-        SearchTextField(
-          pickupQuery: widget.pickupQuery,
-          destinationController: _destinationController,
-          focusNode: _focusNode,
-          onTextFieldFocus: widget.onTextFieldFocus,
-          onLocationClick: widget.onLocationClick,
-        ),
-
-        const SizedBox(height: 16),
-
-        // Predictions List
-        if (widget.predictions.isNotEmpty) ...[
-          const Text(
-            "Hasil Pencarian",
-            style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-          ),
-          const SizedBox(height: 8),
-          ...widget.predictions.map((prediction) {
-            return PredictionItem(
-              prediction: prediction,
-              onClick: () => widget.onPredictionSelected(prediction),
-            );
-          }),
-          const SizedBox(height: 16),
-        ],
-
-        // Saved Places Section
-        if (widget.savedPlaces.isNotEmpty)
-          TersimpanSection(
-            savedPlaces: widget.savedPlaces,
-            onSavedPlaceSelected: widget.onSavedPlaceSelected,
-          ),
-      ],
-    );
-  }
-}
-
-class SearchTextField extends StatelessWidget {
-  final String pickupQuery;
-  final TextEditingController destinationController;
-  final FocusNode focusNode;
-  final VoidCallback onTextFieldFocus;
-  final VoidCallback onLocationClick;
-
-  const SearchTextField({
-    super.key,
-    required this.pickupQuery,
-    required this.destinationController,
-    required this.focusNode,
-    required this.onTextFieldFocus,
-    required this.onLocationClick,
+    required this.clearQuery,
   });
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: Colors.grey.shade300),
-      ),
+    return SingleChildScrollView(
       child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Pickup Location Row
-          Row(
-            children: [
-              Container(
-                width: 12,
-                height: 12,
-                decoration: const BoxDecoration(
-                  color: Colors.green,
-                  shape: BoxShape.circle,
-                ),
+          // Search Card
+          Card(
+            elevation: 0,
+            
+            child: Padding(
+              padding: const EdgeInsets.all(4),
+              child: Column(
+                children: [
+                  // Pickup TextField
+                  _buildLocationTextField(
+                    query: pickupQuery,
+                    hint: 'Lokasi Jemput',
+                    isPickup: true,
+                    icon: Icons.circle,
+                    iconColor: AppColors.info,
+                    onChanged: onPickupQueryChanged,
+                    onTap: onTextFieldFocus,
+                    onLocationClick: onLocationClick,
+                    onClear: () => clearQuery(isPickup: true),
+                  ),
+                  const SizedBox(height: 4),
+                  const Divider(height: 1),
+                  const SizedBox(height: 4),
+                  // Destination TextField
+                  _buildLocationTextField(
+                    query: destinationQuery,
+                    hint: 'Mau ke mana, nih?',
+                    isPickup: false,
+                    image: 'assets/images/point_icon.svg',
+                    onChanged: onDestinationQueryChanged,
+                    onTap: onTextFieldFocus,
+                    onClear: () => clearQuery(isPickup: false),
+                  ),
+                ],
               ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: GestureDetector(
-                  onTap: onLocationClick,
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(vertical: 12),
-                    child: Text(
-                      pickupQuery,
-                      style: const TextStyle(
-                        fontSize: 16,
-                        color: Colors.black87,
-                      ),
+            ),
+          ),
+
+          const SizedBox(height: 16),
+
+          // Predictions List
+          if (predictions.isNotEmpty) ...[
+            const Padding(
+              padding: EdgeInsets.symmetric(horizontal: 16),
+              child: Text(
+                'Hasil Pencarian',
+                style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+              ),
+            ),
+            const SizedBox(height: 8),
+            ...predictions.map((prediction) {
+              return _PredictionItem(
+                prediction: prediction,
+                onTap: () => onPredictionSelected(prediction),
+              );
+            }),
+          ]
+          // Saved Places Section
+          else if (savedPlaces.isNotEmpty) ...[
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16),
+              child: Row(
+                children: [
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                    decoration: BoxDecoration(
+                      border: Border.all(color: Colors.grey.shade300),
+                      borderRadius: BorderRadius.circular(20),
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: const [
+                        Icon(Icons.favorite, color: Colors.red, size: 18),
+                        SizedBox(width: 6),
+                        Text(
+                          'Tersimpan',
+                          style: TextStyle(fontWeight: FontWeight.bold),
+                        ),
+                      ],
                     ),
                   ),
-                ),
+                ],
               ),
-            ],
-          ),
+            ),
+            const Divider(height: 32),
+            ...savedPlaces.map((place) {
+              return _SavedPlaceItem(
+                place: place,
+                onTap: () => onSavedPlaceSelected(place),
+              );
+            }),
+          ],
 
-          const Divider(),
-
-          // Destination TextField Row
-          Row(
-            children: [
-              Container(
-                width: 12,
-                height: 12,
-                decoration: const BoxDecoration(
-                  color: Colors.red,
-                  shape: BoxShape.circle,
-                ),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: TextField(
-                  controller: destinationController,
-                  focusNode: focusNode,
-                  onTap: onTextFieldFocus,
-                  decoration: const InputDecoration(
-                    hintText: "Mau kemana?",
-                    border: InputBorder.none,
-                    hintStyle: TextStyle(color: Colors.grey),
-                  ),
-                  textInputAction: TextInputAction.search,
-                ),
-              ),
-            ],
-          ),
+          const SizedBox(height: 100), // Extra space for keyboard
         ],
       ),
     );
   }
+
+  Widget _buildLocationTextField({
+    required String query,
+    required String hint,
+    required bool isPickup,
+    IconData? icon,
+    Color? iconColor,
+    String? image,
+    required Function(String) onChanged,
+    required VoidCallback onTap,
+    VoidCallback? onLocationClick,
+    VoidCallback? onClear,
+  }) {
+    return TextField(
+      controller: TextEditingController(text: query)
+        ..selection = TextSelection.collapsed(offset: query.length),
+      onChanged: onChanged,
+      onTap: onTap,
+      decoration: InputDecoration(
+        hintText: hint,
+        hintStyle: const TextStyle(color: Colors.grey),
+        border: InputBorder.none,
+        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+        prefixIcon: image != null
+            ? Padding(
+                padding: const EdgeInsets.all(12),
+                child: image.endsWith('.svg')
+                    ? SvgPicture.asset(
+                        image,
+                        width: 20,
+                        height: 20,
+                        fit: BoxFit.contain,
+                      )
+                    : Image.asset(
+                        image,
+                        width: 20,
+                        height: 20,
+                        fit: BoxFit.contain,
+                      ),
+              )
+            : Icon(icon, color: iconColor, size: 20),
+        suffixIcon: query.isNotEmpty
+            ? IconButton(
+                icon: const Icon(Icons.clear, size: 20),
+                onPressed: onClear,
+              )
+            : (isPickup && query.isEmpty
+                ? IconButton(
+                    icon: const Icon(Icons.my_location, size: 20),
+                    onPressed: onLocationClick,
+                  )
+                : null),
+      ),
+    );
+  }
 }
 
-class PredictionItem extends StatelessWidget {
-  final dynamic prediction;
-  final VoidCallback onClick;
+class _PredictionItem extends StatelessWidget {
+  final PlacePrediction prediction;
+  final VoidCallback onTap;
 
-  const PredictionItem({
-    super.key,
+  const _PredictionItem({
     required this.prediction,
-    required this.onClick,
+    required this.onTap,
   });
 
   @override
   Widget build(BuildContext context) {
     return ListTile(
-      onTap: onClick,
-      leading: Icon(Icons.location_on, color: AppColors.primary),
+      onTap: onTap,
+      leading: const Icon(Icons.location_on, color: Colors.grey),
       title: Text(
-        prediction.toString(), // Sesuaikan dengan struktur data prediction
-        style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w500),
-      ),
-      subtitle: const Text(
-        "Hasil pencarian",
-        style: TextStyle(color: Colors.grey),
-      ),
-    );
-  }
-}
-
-class TersimpanSection extends StatelessWidget {
-  final List<SavedPlace> savedPlaces;
-  final Function(SavedPlace) onSavedPlaceSelected;
-
-  const TersimpanSection({
-    super.key,
-    required this.savedPlaces,
-    required this.onSavedPlaceSelected,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        const Text(
-          "Tersimpan",
-          style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-        ),
-        const SizedBox(height: 8),
-        ...savedPlaces.map((place) {
-          return SavedPlaceItem(
-            place: place,
-            onClick: () => onSavedPlaceSelected(place),
-          );
-        }),
-      ],
-    );
-  }
-}
-
-class SavedPlaceItem extends StatelessWidget {
-  final SavedPlace place;
-  final VoidCallback onClick;
-
-  const SavedPlaceItem({super.key, required this.place, required this.onClick});
-
-  @override
-  Widget build(BuildContext context) {
-    return ListTile(
-      onTap: onClick,
-      leading: Icon(Icons.bookmark, color: AppColors.primary),
-      title: Text(
-        place.title,
+        prediction.mainText,
         style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w500),
       ),
       subtitle: Text(
-        "${place.address} • ${place.distance}",
-        style: const TextStyle(color: Colors.grey),
+        prediction.secondaryText,
+        style: const TextStyle(color: Colors.grey, fontSize: 13),
       ),
+    );
+  }
+}
+
+class _SavedPlaceItem extends StatelessWidget {
+  final SavedPlace place;
+  final VoidCallback onTap;
+
+  const _SavedPlaceItem({
+    required this.place,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return ListTile(
+      onTap: onTap,
+      contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+      leading: const Icon(Icons.location_on, color: Colors.grey, size: 24),
+      title: Row(
+        children: [
+          Expanded(
+            child: Text(
+              place.title,
+              style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+            ),
+          ),
+          Text(
+            place.distance,
+            style: const TextStyle(fontSize: 12, color: Colors.grey, fontWeight: FontWeight.bold),
+          ),
+        ],
+      ),
+      subtitle: Text(
+        place.address,
+        style: const TextStyle(color: Colors.grey, fontSize: 13),
+        maxLines: 1,
+        overflow: TextOverflow.ellipsis,
+      ),
+      trailing: const Icon(Icons.favorite, color: Colors.red, size: 20),
     );
   }
 }

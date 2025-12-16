@@ -7,4 +7,5 @@ export 'search_stage.dart';
 export 'pickup_confirm_stage.dart';
 export 'route_confirm_stage.dart';
 export 'finding_driver_stage.dart';
-export 'order_sheet_content.dart';
+export 'pickup_marker_widget.dart';
+export 'top_route_info_bar.dart';
