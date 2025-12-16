@@ -18,7 +18,6 @@ class HomeDriverController extends GetxController {
   }
 
   void _getCurrentLocation() async {
-    // Izin Lokasi harus dihandle di sini (seperti permissionLauncher di Compose)
     bool serviceEnabled = await Geolocator.isLocationServiceEnabled();
     if (!serviceEnabled) return;
 

@@ -2,18 +2,22 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
-import 'package:geocoding/geocoding.dart';
 import '../../../../data/services/ride_service.dart';
+// Pastikan Anda punya API Key di sini atau ganti string langsung di bawah
+import '../../../../../utils/app_constants.dart';
 
-// Model untuk hasil pencarian (PlaceResult)
+// Model khusus untuk hasil Places API
 class PlaceResult {
-  final String title;
-  final String subtitle;
-  final LatLng latLng;
+  final String placeId; // ID unik dari Google
+  final String title; // Main text (misal: "Rita Supermall")
+  final String subtitle; // Secondary text (misal: "Jalan Jend. Soedirman...")
+  final LatLng? latLng; // Bisa null jika belum di-fetch detailnya
+
   PlaceResult({
+    this.placeId = '',
     required this.title,
     required this.subtitle,
-    required this.latLng,
+    this.latLng,
   });
 }
 
@@ -21,6 +25,11 @@ enum OrderStage { search, pickupConfirm, routeConfirm, findingDriver }
 
 class CreateOrderController extends GetxController {
   final RideService _rideService = Get.find<RideService>();
+
+  // Gunakan GetConnect untuk HTTP Request ke Google API
+  final _connect = GetConnect();
+
+  final String _apiKey = "AIzaSyAuyoAFHTVJRA6WKBRGnDc1mQ1ZQk7pl2A";
 
   final pickupController = TextEditingController();
   final destinationController = TextEditingController();
@@ -31,35 +40,38 @@ class CreateOrderController extends GetxController {
   final currentStage = OrderStage.search.obs;
   final selectedVehicleType = 'motor'.obs;
 
-  // Inisialisasi dengan 0 agar aman dari error null
   final estimatedPrice = 0.0.obs;
   final estimatedDistance = 0.0.obs;
   final estimatedDuration = 0.obs;
   String? encodedPolyline;
 
+  // Menggunakan PlaceResult agar cocok dengan View
   final searchResults = <PlaceResult>[].obs;
   final isSearchingLocation = false.obs;
   Timer? _debounce;
+
+  // Maps Controller
+  final Completer<GoogleMapController> _mapController = Completer();
+  final markers = <Marker>{}.obs;
 
   // Default coordinates (Purwokerto)
   LatLng? pickupLatLng = const LatLng(-7.4242, 109.2303);
   LatLng? destLatLng = const LatLng(-7.4000, 109.2500);
 
-  // PERBAIKAN 1: Menambahkan 'pricePerKm' agar View tidak error saat membacanya
   final vehicleTypes = [
     {
       'type': 'motor',
       'name': 'JekMotor',
       'icon': Icons.motorcycle,
       'description': 'Cepat dan hemat untuk sendiri',
-      'pricePerKm': 2500, // Data ini wajib ada
+      'pricePerKm': 2500,
     },
     {
       'type': 'mobil',
       'name': 'JekMobil',
       'icon': Icons.directions_car,
       'description': 'Nyaman untuk beramai-ramai',
-      'pricePerKm': 4000, // Data ini wajib ada
+      'pricePerKm': 4000,
     },
   ];
 
@@ -79,107 +91,174 @@ class CreateOrderController extends GetxController {
         destinationController.text.isNotEmpty;
   }
 
-  // --- LOCATION SEARCH ---
+  // --- MAPS LOGIC ---
+  void onMapCreated(GoogleMapController controller) {
+    if (!_mapController.isCompleted) {
+      _mapController.complete(controller);
+    }
+    updateMapDisplay();
+  }
+
+  void updateMapDisplay() {
+    markers.clear();
+    if (pickupLatLng != null) {
+      markers.add(
+        Marker(
+          markerId: const MarkerId('pickup'),
+          position: pickupLatLng!,
+          icon: BitmapDescriptor.defaultMarkerWithHue(
+            BitmapDescriptor.hueGreen,
+          ),
+        ),
+      );
+    }
+    if (destLatLng != null) {
+      markers.add(
+        Marker(
+          markerId: const MarkerId('destination'),
+          position: destLatLng!,
+          icon: BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueRed),
+        ),
+      );
+    }
+
+    // Auto zoom fit
+    if (pickupLatLng != null && destLatLng != null) {
+      Future.delayed(const Duration(milliseconds: 500), () async {
+        final c = await _mapController.future;
+        c.animateCamera(
+          CameraUpdate.newLatLngBounds(
+            _boundsFromLatLngList([pickupLatLng!, destLatLng!]),
+            50,
+          ),
+        );
+      });
+    }
+  }
+
+  LatLngBounds _boundsFromLatLngList(List<LatLng> list) {
+    double? x0, x1, y0, y1;
+    for (LatLng latLng in list) {
+      if (x0 == null) {
+        x0 = x1 = latLng.latitude;
+        y0 = y1 = latLng.longitude;
+      } else {
+        if (latLng.latitude > x1!) x1 = latLng.latitude;
+        if (latLng.latitude < x0) x0 = latLng.latitude;
+        if (latLng.longitude > y1!) y1 = latLng.longitude;
+        if (latLng.longitude < y0!) y0 = latLng.longitude;
+      }
+    }
+    return LatLngBounds(
+      northeast: LatLng(x1!, y1!),
+      southwest: LatLng(x0!, y0!),
+    );
+  }
+
+  // --- GOOGLE PLACES API LOGIC ---
 
   void onSearchTextChanged(String query) {
     if (_debounce?.isActive ?? false) _debounce!.cancel();
-    _debounce = Timer(const Duration(milliseconds: 500), () {
-      if (query.length > 2) {
-        _searchPlaces(query);
-      } else {
-        searchResults.clear();
-      }
+    if (query.length < 3) {
+      searchResults.clear();
+      return;
+    }
+
+    _debounce = Timer(const Duration(milliseconds: 700), () {
+      _searchPlacesApi(query);
     });
   }
 
-  Future<void> _searchPlaces(String query) async {
+  Future<void> _searchPlacesApi(String query) async {
     try {
       isSearchingLocation.value = true;
-      List<Location> locations = await locationFromAddress(query);
 
-      if (locations.isNotEmpty) {
-        List<PlaceResult> results = [];
-        for (var loc in locations.take(5)) {
-          try {
-            List<Placemark> p = await placemarkFromCoordinates(
-              loc.latitude,
-              loc.longitude,
-            );
-            if (p.isNotEmpty) {
-              final place = p.first;
-              final title = place.street ?? place.name ?? query;
-              final subtitle = [
-                place.subLocality,
-                place.locality,
-              ].where((e) => e != null && e.isNotEmpty).join(", ");
+      // 1. Panggil API Autocomplete
+      // Session Token disarankan untuk billing, di sini kita skip dulu untuk simplifikasi
+      final url =
+          'https://maps.googleapis.com/maps/api/place/autocomplete/json?'
+          'input=$query&'
+          'key=$_apiKey&'
+          'components=country:id'; // Batasi pencarian di Indonesia
 
-              results.add(
-                PlaceResult(
-                  title: title,
-                  subtitle: subtitle,
-                  latLng: LatLng(loc.latitude, loc.longitude),
-                ),
-              );
-            }
-          } catch (_) {}
-        }
-        searchResults.value = results;
+      final response = await _connect.get(url);
+
+      if (response.status.hasError) {
+        print("Places API Error: ${response.statusText}");
+        return;
+      }
+
+      final data = response.body;
+      if (data['status'] == 'OK') {
+        final predictions = data['predictions'] as List;
+
+        searchResults.value = predictions.map((p) {
+          final structured = p['structured_formatting'] ?? {};
+          return PlaceResult(
+            placeId: p['place_id'],
+            title: structured['main_text'] ?? p['description'],
+            subtitle: structured['secondary_text'] ?? '',
+          );
+        }).toList();
+      } else {
+        searchResults.clear();
+        print(
+          "Places API Status: ${data['status']} - ${data['error_message']}",
+        );
       }
     } catch (e) {
-      print("Search Error: $e");
+      print("Error fetching places: $e");
     } finally {
       isSearchingLocation.value = false;
     }
   }
 
-  // PERBAIKAN 2: Menambahkan method yang dipanggil oleh View (_buildLocationInput & List)
-  void selectLocationFromSuggestion(PlaceResult place, bool isPickup) {
+  // Dipanggil saat user memilih salah satu item dari list
+  Future<void> selectLocation(PlaceResult place, bool isPickup) async {
+    // Jika LatLng sudah ada (misal dari History), langsung pakai
+    LatLng selectedLatLng;
+
+    if (place.latLng != null) {
+      selectedLatLng = place.latLng!;
+    } else {
+      // Jika belum ada (dari API Autocomplete), kita harus fetch Detailnya
+      selectedLatLng = await _getPlaceDetails(place.placeId);
+    }
+
+    // Update UI Controller
     if (isPickup) {
       pickupController.text = place.title;
-      pickupLatLng = place.latLng;
+      pickupLatLng = selectedLatLng;
     } else {
       destinationController.text = place.title;
-      destLatLng = place.latLng;
+      destLatLng = selectedLatLng;
     }
+
     searchResults.clear();
-    Get.back(); // Menutup bottom sheet
+    Get.back(); // Tutup bottom sheet
   }
 
-  // PERBAIKAN 3: Menambahkan method untuk Quick Suggestion
-  Future<void> searchLocationFromText(String query, bool isPickup) async {
+  // Fetch koordinat detail dari Place ID
+  Future<LatLng> _getPlaceDetails(String placeId) async {
     try {
-      isLoading.value = true;
-      List<Location> locations = await locationFromAddress(query);
-      if (locations.isNotEmpty) {
-        final loc = locations.first;
-        final latLng = LatLng(loc.latitude, loc.longitude);
+      final url =
+          'https://maps.googleapis.com/maps/api/place/details/json?'
+          'place_id=$placeId&'
+          'fields=geometry&' // Kita hanya butuh koordinat
+          'key=$_apiKey';
 
-        if (isPickup) {
-          pickupController.text = query;
-          pickupLatLng = latLng;
-        } else {
-          destinationController.text = query;
-          destLatLng = latLng;
-        }
+      final response = await _connect.get(url);
+      final data = response.body;
 
-        if (Get.isBottomSheetOpen ?? false) Get.back();
+      if (data['status'] == 'OK') {
+        final location = data['result']['geometry']['location'];
+        return LatLng(location['lat'], location['lng']);
       }
     } catch (e) {
-      Get.snackbar("Error", "Lokasi tidak ditemukan");
-    } finally {
-      isLoading.value = false;
+      print("Error details: $e");
     }
-  }
-
-  // Helper untuk setter manual (dipakai di view _selectLocation)
-  void setPickupLocation(String address, LatLng latLng) {
-    pickupController.text = address;
-    pickupLatLng = latLng;
-  }
-
-  void setDestinationLocation(String address, LatLng latLng) {
-    destinationController.text = address;
-    destLatLng = latLng;
+    // Fallback default jika gagal
+    return const LatLng(-7.4242, 109.2303);
   }
 
   // --- ORDER LOGIC ---
@@ -205,7 +284,7 @@ class CreateOrderController extends GetxController {
 
       _recalculatePriceOnly();
     } catch (e) {
-      Get.snackbar("Error", "Gagal menghitung rute: $e");
+      Get.snackbar("Error", "Gagal menghitung rute");
     } finally {
       isLoading.value = false;
     }
@@ -227,6 +306,7 @@ class CreateOrderController extends GetxController {
       case OrderStage.search:
         if (isFormValid.value) {
           currentStage.value = OrderStage.pickupConfirm;
+          updateMapDisplay(); // Update map saat pindah stage
         }
         break;
       case OrderStage.pickupConfirm:
@@ -249,6 +329,7 @@ class CreateOrderController extends GetxController {
         break;
       case OrderStage.routeConfirm:
         currentStage.value = OrderStage.pickupConfirm;
+        updateMapDisplay();
         break;
       case OrderStage.findingDriver:
         currentStage.value = OrderStage.routeConfirm;
@@ -292,13 +373,24 @@ class CreateOrderController extends GetxController {
         }
       }
     } catch (e) {
-      Get.snackbar('Error', 'Gagal membuat pesanan: $e');
+      Get.snackbar('Error', 'Gagal pesan: $e');
     } finally {
       isLoading.value = false;
     }
   }
 
   void cancelSearch() => Get.back();
+
+  // Helper untuk View (misal untuk quick history)
+  void setPickupLocation(String address, LatLng latLng) {
+    pickupController.text = address;
+    pickupLatLng = latLng;
+  }
+
+  void setDestinationLocation(String address, LatLng latLng) {
+    destinationController.text = address;
+    destLatLng = latLng;
+  }
 
   @override
   void onClose() {

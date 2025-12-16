@@ -1,11 +1,12 @@
-// filepath: lib/app/modules/passenger/create_order/views/create_order_view.dart
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import 'package:google_maps_flutter/google_maps_flutter.dart'; // Wajib import ini
 import '../controllers/create_order_controller.dart';
 import '../../../../../utils/app_colors.dart';
 
 class CreateOrderView extends GetView<CreateOrderController> {
   const CreateOrderView({super.key});
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -16,7 +17,7 @@ class CreateOrderView extends GetView<CreateOrderController> {
             case OrderStage.search:
               return _buildSearchStage();
             case OrderStage.pickupConfirm:
-              return _buildPickupConfirmStage();
+              return _buildPickupConfirmStage(); // Map ada di sini
             case OrderStage.routeConfirm:
               return _buildRouteConfirmStage();
             case OrderStage.findingDriver:
@@ -27,7 +28,9 @@ class CreateOrderView extends GetView<CreateOrderController> {
     );
   }
 
-  // Stage 1: Search Stage
+  // =========================================================
+  // STAGE 1: SEARCH
+  // =========================================================
   Widget _buildSearchStage() {
     return Column(
       children: [
@@ -80,8 +83,6 @@ class CreateOrderView extends GetView<CreateOrderController> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 const SizedBox(height: 20),
-
-                // Location inputs
                 Container(
                   padding: const EdgeInsets.all(20),
                   decoration: BoxDecoration(
@@ -97,20 +98,15 @@ class CreateOrderView extends GetView<CreateOrderController> {
                   ),
                   child: Column(
                     children: [
-                      // From location
                       _buildLocationInput(
                         icon: Icons.radio_button_checked,
                         iconColor: AppColors.success,
                         label: 'Dari',
                         hint: 'Lokasi penjemputan',
                         controller: controller.pickupController,
-                        onTap: () =>
-                            _showLocationPicker(true), // Fixed: Defined method
+                        onTap: () => _showLocationPicker(true),
                       ),
-
                       const SizedBox(height: 16),
-
-                      // Divider with swap button
                       Row(
                         children: [
                           Expanded(
@@ -122,7 +118,7 @@ class CreateOrderView extends GetView<CreateOrderController> {
                           Container(
                             margin: const EdgeInsets.symmetric(horizontal: 12),
                             child: GestureDetector(
-                              onTap: _swapLocations, // Fixed: Defined method
+                              onTap: _swapLocations,
                               child: Container(
                                 padding: const EdgeInsets.all(8),
                                 decoration: BoxDecoration(
@@ -146,26 +142,20 @@ class CreateOrderView extends GetView<CreateOrderController> {
                           ),
                         ],
                       ),
-
                       const SizedBox(height: 16),
-
-                      // To location
                       _buildLocationInput(
                         icon: Icons.location_on,
                         iconColor: AppColors.error,
                         label: 'Ke',
                         hint: 'Lokasi tujuan',
                         controller: controller.destinationController,
-                        onTap: () =>
-                            _showLocationPicker(false), // Fixed: Defined method
+                        onTap: () => _showLocationPicker(false),
                       ),
                     ],
                   ),
                 ),
 
                 const SizedBox(height: 24),
-
-                // Recent locations or suggestions
                 const Text(
                   'Lokasi Terkini',
                   style: TextStyle(
@@ -174,9 +164,7 @@ class CreateOrderView extends GetView<CreateOrderController> {
                     color: AppColors.textPrimary,
                   ),
                 ),
-
                 const SizedBox(height: 12),
-
                 ...[
                   'Universitas Jenderal Soedirman',
                   'Terminal Purwokerto',
@@ -187,7 +175,7 @@ class CreateOrderView extends GetView<CreateOrderController> {
           ),
         ),
 
-        // Continue button
+        // Continue Button
         Container(
           padding: const EdgeInsets.all(20),
           decoration: BoxDecoration(
@@ -202,7 +190,6 @@ class CreateOrderView extends GetView<CreateOrderController> {
           ),
           child: Obx(() {
             final canContinue = controller.isFormValid.value;
-
             return _buildActionButton(
               text: 'Lanjutkan',
               onPressed: canContinue ? controller.nextStage : null,
@@ -214,130 +201,100 @@ class CreateOrderView extends GetView<CreateOrderController> {
     );
   }
 
-  // Stage 2: Pickup Confirm Stage
+  // =========================================================
+  // STAGE 2: PICKUP CONFIRM (MAPS)
+  // =========================================================
   Widget _buildPickupConfirmStage() {
     return Column(
       children: [
-        // Header
         _buildStageHeader('Konfirmasi Penjemputan'),
-
-        // Map placeholder
         Expanded(
-          child: Container(
-            color: AppColors.surface,
-            child: Stack(
-              children: [
-                // Map container
-                Container(
-                  decoration: BoxDecoration(
-                    color: Colors.grey.withValues(alpha: 0.2),
-                  ),
-                  child: const Center(
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Icon(
-                          Icons.map,
-                          size: 48,
-                          color: AppColors.textSecondary,
-                        ),
-                        SizedBox(height: 8),
-                        Text(
-                          'Map Integration\n(Google Maps)',
-                          textAlign: TextAlign.center,
-                          style: TextStyle(
-                            color: AppColors.textSecondary,
-                            fontSize: 16,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-
-                // Pickup location card
-                Positioned(
-                  bottom: 120,
-                  left: 20,
-                  right: 20,
-                  child: Container(
-                    padding: const EdgeInsets.all(16),
-                    decoration: BoxDecoration(
-                      color: Colors.white,
-                      borderRadius: BorderRadius.circular(16),
-                      boxShadow: [
-                        BoxShadow(
-                          color: Colors.black.withValues(alpha: 0.1),
-                          blurRadius: 8,
-                          offset: const Offset(0, 2),
-                        ),
-                      ],
-                    ),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        const Text(
-                          'Lokasi Penjemputan',
-                          style: TextStyle(
-                            fontSize: 12,
-                            color: AppColors.textSecondary,
-                            fontWeight: FontWeight.w500,
-                          ),
-                        ),
-                        const SizedBox(height: 4),
-                        Row(
-                          children: [
-                            const Icon(
-                              Icons.radio_button_checked,
-                              color: AppColors.success,
-                              size: 20,
-                            ),
-                            const SizedBox(width: 12),
-                            Expanded(
-                              child: Text(
-                                controller.pickupController.text,
-                                style: const TextStyle(
-                                  fontSize: 16,
-                                  fontWeight: FontWeight.w600,
-                                  color: AppColors.textPrimary,
-                                ),
-                              ),
-                            ),
-                          ],
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ),
-
-        // Action buttons
-        Container(
-          padding: const EdgeInsets.all(20),
-          decoration: BoxDecoration(
-            color: Colors.white,
-            boxShadow: [
-              BoxShadow(
-                color: Colors.grey.withValues(alpha: 0.1),
-                blurRadius: 8,
-                offset: const Offset(0, -2),
-              ),
-            ],
-          ),
-          child: Column(
+          child: Stack(
             children: [
-              _buildActionButton(
-                text: 'Konfirmasi Lokasi',
-                onPressed: controller.nextStage,
+              // 1. GOOGLE MAPS (Fixed: Bukan Icon lagi)
+              Obx(
+                () => GoogleMap(
+                  mapType: MapType.normal,
+                  initialCameraPosition: CameraPosition(
+                    target:
+                        controller.pickupLatLng ??
+                        const LatLng(-7.4242, 109.2303),
+                    zoom: 15,
+                  ),
+                  onMapCreated: controller.onMapCreated,
+                  markers: controller.markers,
+                  myLocationEnabled: true,
+                  myLocationButtonEnabled: false,
+                  zoomControlsEnabled: false,
+                ),
               ),
-              const SizedBox(height: 12),
-              _buildActionButton(
-                text: 'Ubah Lokasi',
-                onPressed: controller.previousStage,
-                isSecondary: true,
+
+              // 2. Pickup Detail Card
+              Positioned(
+                bottom: 20,
+                left: 20,
+                right: 20,
+                child: Container(
+                  padding: const EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(16),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withValues(alpha: 0.1),
+                        blurRadius: 8,
+                        offset: const Offset(0, 2),
+                      ),
+                    ],
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Text(
+                        'Lokasi Penjemputan',
+                        style: TextStyle(
+                          fontSize: 12,
+                          color: AppColors.textSecondary,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                      Row(
+                        children: [
+                          const Icon(
+                            Icons.radio_button_checked,
+                            color: AppColors.success,
+                            size: 20,
+                          ),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: Text(
+                              controller.pickupController.text,
+                              style: const TextStyle(
+                                fontSize: 16,
+                                fontWeight: FontWeight.w600,
+                                color: AppColors.textPrimary,
+                              ),
+                              maxLines: 2,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 16),
+                      _buildActionButton(
+                        text: 'Konfirmasi Lokasi',
+                        onPressed: controller.nextStage,
+                      ),
+                      const SizedBox(height: 12),
+                      _buildActionButton(
+                        text: 'Ubah Lokasi',
+                        onPressed: controller.previousStage,
+                        isSecondary: true,
+                      ),
+                    ],
+                  ),
+                ),
               ),
             ],
           ),
@@ -346,21 +303,20 @@ class CreateOrderView extends GetView<CreateOrderController> {
     );
   }
 
-  // Stage 3: Route Confirm Stage
+  // =========================================================
+  // STAGE 3: ROUTE CONFIRM
+  // =========================================================
   Widget _buildRouteConfirmStage() {
     return Column(
       children: [
-        // Header
         _buildStageHeader('Pilih Kendaraan'),
-
-        // Content
         Expanded(
           child: SingleChildScrollView(
             padding: const EdgeInsets.all(20),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                // Route summary card
+                // Summary Route
                 Container(
                   padding: const EdgeInsets.all(16),
                   decoration: BoxDecoration(
@@ -391,6 +347,8 @@ class CreateOrderView extends GetView<CreateOrderController> {
                                 fontSize: 14,
                                 color: AppColors.textPrimary,
                               ),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
                             ),
                           ),
                         ],
@@ -423,6 +381,8 @@ class CreateOrderView extends GetView<CreateOrderController> {
                                 fontSize: 14,
                                 color: AppColors.textPrimary,
                               ),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
                             ),
                           ),
                         ],
@@ -430,10 +390,9 @@ class CreateOrderView extends GetView<CreateOrderController> {
                     ],
                   ),
                 ),
-
                 const SizedBox(height: 24),
 
-                // Vehicle selection
+                // Vehicle Options
                 const Text(
                   'Pilih Kendaraan',
                   style: TextStyle(
@@ -442,45 +401,35 @@ class CreateOrderView extends GetView<CreateOrderController> {
                     color: AppColors.textPrimary,
                   ),
                 ),
-
                 const SizedBox(height: 16),
-
                 Obx(
                   () => Column(
                     children: controller.vehicleTypes.map((vehicle) {
                       final type = vehicle['type'] as String;
-                      final name = vehicle['name'] as String;
-                      final icon = vehicle['icon'] as IconData;
-                      final pricePerKm = (vehicle['pricePerKm'] ?? 0) as int;
-                      final description = vehicle['description'] as String;
-                      final isSelected =
-                          controller.selectedVehicleType.value == type;
-
                       return _buildVehicleOption(
                         type: type,
-                        name: name,
-                        icon: icon,
-                        pricePerKm: pricePerKm,
-                        description: description,
-                        isSelected: isSelected,
+                        name: vehicle['name'] as String,
+                        icon: vehicle['icon'] as IconData,
+                        pricePerKm: (vehicle['pricePerKm'] ?? 0) as int,
+                        description: vehicle['description'] as String,
+                        isSelected:
+                            controller.selectedVehicleType.value == type,
                         onTap: () => controller.selectVehicleType(type),
                       );
                     }).toList(),
                   ),
                 ),
 
+                // Price
                 const SizedBox(height: 24),
-
-                // Price estimation
                 Obx(
                   () => controller.estimatedPrice.value > 0
                       ? _buildPriceCard()
                       : const SizedBox(),
                 ),
 
-                const SizedBox(height: 16),
-
                 // Notes
+                const SizedBox(height: 16),
                 TextField(
                   controller: controller.notesController,
                   maxLines: 3,
@@ -488,14 +437,6 @@ class CreateOrderView extends GetView<CreateOrderController> {
                     hintText: 'Catatan untuk driver (opsional)',
                     border: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(12),
-                      borderSide: const BorderSide(color: AppColors.border),
-                    ),
-                    focusedBorder: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(12),
-                      borderSide: const BorderSide(
-                        color: AppColors.primary,
-                        width: 2,
-                      ),
                     ),
                   ),
                 ),
@@ -504,7 +445,7 @@ class CreateOrderView extends GetView<CreateOrderController> {
           ),
         ),
 
-        // Action buttons
+        // Action Button
         Container(
           padding: const EdgeInsets.all(20),
           decoration: BoxDecoration(
@@ -536,13 +477,14 @@ class CreateOrderView extends GetView<CreateOrderController> {
     );
   }
 
-  // Stage 4: Finding Driver Stage (The Missing Part)
+  // =========================================================
+  // STAGE 4: FINDING DRIVER
+  // =========================================================
   Widget _buildFindingDriverStage() {
     return Center(
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          // Animated searching icon
           Container(
             width: 120,
             height: 120,
@@ -561,9 +503,7 @@ class CreateOrderView extends GetView<CreateOrderController> {
               ),
             ),
           ),
-
           const SizedBox(height: 24),
-
           const Text(
             'Mencari driver terdekat...',
             style: TextStyle(
@@ -572,18 +512,13 @@ class CreateOrderView extends GetView<CreateOrderController> {
               color: AppColors.textPrimary,
             ),
           ),
-
           const SizedBox(height: 8),
-
           const Text(
             'Tunggu sebentar, kami sedang mencarikan\ndriver terbaik untuk Anda',
             textAlign: TextAlign.center,
             style: TextStyle(fontSize: 14, color: AppColors.textSecondary),
           ),
-
           const SizedBox(height: 32),
-
-          // Cancel button
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 32),
             child: _buildActionButton(
@@ -597,7 +532,10 @@ class CreateOrderView extends GetView<CreateOrderController> {
     );
   }
 
-  // Helper widgets
+  // =========================================================
+  // HELPER WIDGETS & METHODS
+  // =========================================================
+
   Widget _buildStageHeader(String title) {
     return Container(
       padding: const EdgeInsets.fromLTRB(20, 16, 20, 16),
@@ -645,8 +583,7 @@ class CreateOrderView extends GetView<CreateOrderController> {
     required Color iconColor,
     required String label,
     required String hint,
-    required TextEditingController
-    controller, // Controller ini yang akan kita dengarkan
+    required TextEditingController controller,
     required VoidCallback onTap,
   }) {
     return GestureDetector(
@@ -670,7 +607,6 @@ class CreateOrderView extends GetView<CreateOrderController> {
                     label,
                     style: const TextStyle(fontSize: 12, color: Colors.grey),
                   ),
-                  // PERBAIKAN DI SINI: Bungkus Text dengan ValueListenableBuilder
                   ValueListenableBuilder<TextEditingValue>(
                     valueListenable: controller,
                     builder: (context, value, child) {
@@ -680,7 +616,6 @@ class CreateOrderView extends GetView<CreateOrderController> {
                         overflow: TextOverflow.ellipsis,
                         style: TextStyle(
                           fontSize: 14,
-                          // Ubah warna teks jadi hitam jika ada isinya
                           color: value.text.isEmpty
                               ? Colors.grey
                               : Colors.black,
@@ -701,34 +636,17 @@ class CreateOrderView extends GetView<CreateOrderController> {
   Widget _buildRecentLocationItem(String location) {
     return Container(
       margin: const EdgeInsets.only(bottom: 8),
-      child: GestureDetector(
-        onTap: () => _selectLocation(location),
-        child: Container(
-          padding: const EdgeInsets.all(16),
-          decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(12),
-            border: Border.all(color: AppColors.border.withValues(alpha: 0.5)),
-          ),
-          child: Row(
-            children: [
-              const Icon(
-                Icons.history,
-                size: 20,
-                color: AppColors.textSecondary,
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Text(
-                  location,
-                  style: const TextStyle(
-                    fontSize: 14,
-                    color: AppColors.textPrimary,
-                  ),
-                ),
-              ),
-            ],
-          ),
+      child: ListTile(
+        onTap: () => _selectLocation(location), // Fix logic here
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(12),
+          side: BorderSide(color: AppColors.border.withValues(alpha: 0.5)),
+        ),
+        tileColor: Colors.white,
+        leading: const Icon(Icons.history, color: AppColors.textSecondary),
+        title: Text(
+          location,
+          style: const TextStyle(fontSize: 14, color: AppColors.textPrimary),
         ),
       ),
     );
@@ -743,95 +661,67 @@ class CreateOrderView extends GetView<CreateOrderController> {
     required bool isSelected,
     required VoidCallback onTap,
   }) {
-    return Container(
-      margin: const EdgeInsets.only(bottom: 12),
-      child: GestureDetector(
-        onTap: onTap,
-        child: Container(
-          padding: const EdgeInsets.all(16),
-          decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(16),
-            border: Border.all(
-              color: isSelected ? AppColors.primary : AppColors.border,
-              width: isSelected ? 2 : 1,
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        margin: const EdgeInsets.only(bottom: 12),
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(
+            color: isSelected ? AppColors.primary : AppColors.border,
+            width: isSelected ? 2 : 1,
+          ),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.grey.withValues(alpha: 0.1),
+              blurRadius: 4,
+              offset: const Offset(0, 2),
             ),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.grey.withValues(alpha: 0.1),
-                blurRadius: 4,
-                offset: const Offset(0, 2),
-              ),
-            ],
-          ),
-          child: Row(
-            children: [
-              Container(
-                width: 60,
-                height: 60,
-                decoration: BoxDecoration(
-                  color: isSelected
-                      ? AppColors.primary.withValues(alpha: 0.1)
-                      : AppColors.surface,
-                  borderRadius: BorderRadius.circular(12),
-                  border: Border.all(
-                    color: isSelected
-                        ? AppColors.primary
-                        : AppColors.border.withValues(alpha: 0.5),
+          ],
+        ),
+        child: Row(
+          children: [
+            Icon(
+              icon,
+              color: isSelected ? AppColors.primary : AppColors.textSecondary,
+              size: 28,
+            ),
+            const SizedBox(width: 16),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    name,
+                    style: const TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w600,
+                      color: AppColors.textPrimary,
+                    ),
                   ),
-                ),
-                child: Icon(
-                  icon,
-                  color: isSelected
-                      ? AppColors.primary
-                      : AppColors.textSecondary,
-                  size: 28,
-                ),
-              ),
-              const SizedBox(width: 16),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      name,
-                      style: const TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.w600,
-                        color: AppColors.textPrimary,
-                      ),
+                  Text(
+                    description,
+                    style: const TextStyle(
+                      fontSize: 12,
+                      color: AppColors.textSecondary,
                     ),
-                    const SizedBox(height: 2),
-                    Text(
-                      description,
-                      style: const TextStyle(
-                        fontSize: 12,
-                        color: AppColors.textSecondary,
-                      ),
-                    ),
-                    const SizedBox(height: 4),
-                    Text(
-                      'Rp ${pricePerKm.toString()}/km',
-                      style: const TextStyle(
-                        fontSize: 14,
-                        fontWeight: FontWeight.w500,
-                        color: AppColors.primary,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              if (isSelected)
-                Container(
-                  padding: const EdgeInsets.all(4),
-                  decoration: BoxDecoration(
-                    color: AppColors.primary,
-                    shape: BoxShape.circle,
                   ),
-                  child: const Icon(Icons.check, color: Colors.white, size: 16),
-                ),
-            ],
-          ),
+                  Text(
+                    'Rp $pricePerKm/km',
+                    style: const TextStyle(
+                      fontSize: 14,
+                      fontWeight: FontWeight.w500,
+                      color: AppColors.primary,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            if (isSelected)
+              const Icon(Icons.check_circle, color: AppColors.primary),
+          ],
         ),
       ),
     );
@@ -845,88 +735,43 @@ class CreateOrderView extends GetView<CreateOrderController> {
         borderRadius: BorderRadius.circular(16),
         border: Border.all(color: AppColors.primary.withValues(alpha: 0.2)),
       ),
-      child: Column(
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          const Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          Column(
             children: [
-              Text(
-                'Estimasi Perjalanan',
-                style: TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.w600,
-                  color: AppColors.textPrimary,
+              Obx(
+                () => Text(
+                  '${controller.estimatedDistance.value.toStringAsFixed(1)} km',
+                  style: const TextStyle(fontWeight: FontWeight.bold),
                 ),
               ),
+              const Text('Jarak', style: TextStyle(fontSize: 12)),
             ],
           ),
-          const SizedBox(height: 12),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          Column(
             children: [
-              Column(
-                children: [
-                  Obx(
-                    () => Text(
-                      '${controller.estimatedDistance.value.toStringAsFixed(1)} km',
-                      style: const TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.w600,
-                        color: AppColors.textPrimary,
-                      ),
-                    ),
-                  ),
-                  const Text(
-                    'Jarak',
-                    style: TextStyle(
-                      fontSize: 12,
-                      color: AppColors.textSecondary,
-                    ),
-                  ),
-                ],
+              Obx(
+                () => Text(
+                  '${controller.estimatedDuration.value} min',
+                  style: const TextStyle(fontWeight: FontWeight.bold),
+                ),
               ),
-              Column(
-                children: [
-                  Obx(
-                    () => Text(
-                      '${controller.estimatedDuration.value} min',
-                      style: const TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.w600,
-                        color: AppColors.textPrimary,
-                      ),
-                    ),
+              const Text('Waktu', style: TextStyle(fontSize: 12)),
+            ],
+          ),
+          Column(
+            children: [
+              Obx(
+                () => Text(
+                  'Rp ${controller.estimatedPrice.value.toStringAsFixed(0)}',
+                  style: const TextStyle(
+                    fontWeight: FontWeight.bold,
+                    color: AppColors.primary,
                   ),
-                  const Text(
-                    'Waktu',
-                    style: TextStyle(
-                      fontSize: 12,
-                      color: AppColors.textSecondary,
-                    ),
-                  ),
-                ],
+                ),
               ),
-              Column(
-                children: [
-                  Obx(
-                    () => Text(
-                      'Rp ${controller.estimatedPrice.value.toStringAsFixed(0)}',
-                      style: const TextStyle(
-                        fontSize: 18,
-                        fontWeight: FontWeight.bold,
-                        color: AppColors.primary,
-                      ),
-                    ),
-                  ),
-                  const Text(
-                    'Total',
-                    style: TextStyle(
-                      fontSize: 12,
-                      color: AppColors.textSecondary,
-                    ),
-                  ),
-                ],
-              ),
+              const Text('Total', style: TextStyle(fontSize: 12)),
             ],
           ),
         ],
@@ -966,41 +811,37 @@ class CreateOrderView extends GetView<CreateOrderController> {
     );
   }
 
-  // Utility methods
+  // =========================================================
+  // LOGIC & SHEET
+  // =========================================================
+
   void _swapLocations() {
     final pickup = controller.pickupController.text;
     final destination = controller.destinationController.text;
-
     controller.pickupController.text = destination;
     controller.destinationController.text = pickup;
   }
 
-  void _selectLocation(String location) {
-    final currentPickup = controller.pickupLatLng;
-    final currentDest = controller.destLatLng;
-    if (controller.pickupController.text.isEmpty && currentPickup != null) {
-      controller.setPickupLocation(location, currentPickup);
-    } else if (controller.destinationController.text.isEmpty &&
-        currentDest != null) {
-      controller.setDestinationLocation(location, currentDest);
-    } else {
-      controller.searchLocationFromText(
-        location,
-        controller.pickupController.text.isEmpty,
-      );
-    }
+  void _selectLocation(String locationName) {
+    // FIX: Gunakan selectLocation dengan membuat PlaceResult baru
+    // Kita asumsikan ini lokasi cepat (koordinat null dulu, biar controller cari)
+    bool isPickup = controller.pickupController.text.isEmpty;
+
+    // Logic: Jika pickup kosong -> isi pickup. Jika tidak -> isi destination.
+    controller.selectLocation(
+      PlaceResult(title: locationName, subtitle: '', latLng: null),
+      isPickup,
+    );
   }
 
   void _showLocationPicker(bool isPickup) {
     final TextEditingController searchController = TextEditingController();
-    final FocusNode focusNode = FocusNode(); // 1. Buat FocusNode
-
-    // Reset hasil pencarian sebelumnya
+    final FocusNode focusNode = FocusNode();
     controller.searchResults.clear();
 
     Get.bottomSheet(
       Container(
-        height: Get.height * 0.9, // Hampir full screen agar keyboard muat
+        height: Get.height * 0.9,
         decoration: const BoxDecoration(
           color: Colors.white,
           borderRadius: BorderRadius.only(
@@ -1010,7 +851,6 @@ class CreateOrderView extends GetView<CreateOrderController> {
         ),
         child: Column(
           children: [
-            // --- HEADER ---
             Container(
               padding: const EdgeInsets.all(16),
               decoration: const BoxDecoration(
@@ -1034,21 +874,15 @@ class CreateOrderView extends GetView<CreateOrderController> {
                 ],
               ),
             ),
-
-            // --- INPUT FIELD ---
             Padding(
               padding: const EdgeInsets.all(16.0),
               child: TextField(
                 controller: searchController,
-                focusNode: focusNode, // 2. Pasang FocusNode
+                focusNode: focusNode,
                 autofocus: true,
-                textInputAction: TextInputAction.search,
-                onChanged: (val) {
-                  // 3. Panggil fungsi pencarian realtime
-                  controller.onSearchTextChanged(val);
-                },
+                onChanged: (val) => controller.onSearchTextChanged(val),
                 decoration: InputDecoration(
-                  hintText: "Cari nama tempat, jalan, atau area...",
+                  hintText: "Cari nama tempat, jalan...",
                   prefixIcon: const Icon(
                     Icons.search,
                     color: AppColors.primary,
@@ -1059,70 +893,50 @@ class CreateOrderView extends GetView<CreateOrderController> {
                     borderRadius: BorderRadius.circular(12),
                     borderSide: BorderSide.none,
                   ),
-                  contentPadding: const EdgeInsets.symmetric(
-                    horizontal: 16,
-                    vertical: 14,
-                  ),
                 ),
               ),
             ),
-
-            // --- HASIL PENCARIAN (LIST) ---
             Expanded(
               child: Obx(() {
-                // Tampilkan Loading
                 if (controller.isSearchingLocation.value) {
                   return const Center(
                     child: CircularProgressIndicator(color: AppColors.primary),
                   );
                 }
-
-                // Tampilkan Hasil Pencarian API
                 if (controller.searchResults.isNotEmpty) {
                   return ListView.separated(
                     itemCount: controller.searchResults.length,
                     separatorBuilder: (context, index) =>
                         const Divider(height: 1),
                     itemBuilder: (context, index) {
-                      // PERBAIKAN: Gunakan properti dari PlaceResult (title & subtitle)
-                      // Tidak perlu format manual lagi karena sudah dilakukan di Controller
                       final place = controller.searchResults[index];
-
                       return ListTile(
                         leading: const Icon(
                           Icons.location_on_outlined,
                           color: Colors.grey,
                         ),
                         title: Text(
-                          place.title, // Langsung pakai title
+                          place.title,
                           style: const TextStyle(fontWeight: FontWeight.w600),
                         ),
                         subtitle: Text(
-                          place.subtitle, // Langsung pakai subtitle
+                          place.subtitle,
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
                         ),
-                        onTap: () {
-                          // Pilih lokasi ini
-                          controller.selectLocationFromSuggestion(
-                            place,
-                            isPickup,
-                          );
-                        },
+                        onTap: () => controller.selectLocation(
+                          place,
+                          isPickup,
+                        ), // FIX: variable 'place' is correct here
                       );
                     },
                   );
                 }
-
-                // Tampilkan Saran Default (Jika belum mengetik)
                 return ListView(
                   children: [
                     if (searchController.text.isEmpty) ...[
                       const Padding(
-                        padding: EdgeInsets.symmetric(
-                          horizontal: 16,
-                          vertical: 8,
-                        ),
+                        padding: EdgeInsets.all(16),
                         child: Text(
                           "Saran Cepat",
                           style: TextStyle(
@@ -1141,12 +955,6 @@ class CreateOrderView extends GetView<CreateOrderController> {
                       ),
                       _buildQuickSuggestion("Stasiun Purwokerto", isPickup),
                       _buildQuickSuggestion("RITA SuperMall", isPickup),
-                    ] else ...[
-                      // Jika mengetik tapi tidak ada hasil
-                      const Padding(
-                        padding: EdgeInsets.all(20),
-                        child: Center(child: Text("Lokasi tidak ditemukan :(")),
-                      ),
                     ],
                   ],
                 );
@@ -1156,14 +964,11 @@ class CreateOrderView extends GetView<CreateOrderController> {
         ),
       ),
       isScrollControlled: true,
-    ).then((_) {
-      // Cleanup saat bottom sheet ditutup
-      focusNode.dispose();
-    });
+    ).then((_) => focusNode.dispose());
+
+    // Auto focus delay hack for bottom sheet
     Future.delayed(const Duration(milliseconds: 500), () {
-      if (focusNode.canRequestFocus) {
-        focusNode.requestFocus();
-      }
+      if (focusNode.canRequestFocus) focusNode.requestFocus();
     });
   }
 
@@ -1172,10 +977,11 @@ class CreateOrderView extends GetView<CreateOrderController> {
       leading: const Icon(Icons.history, color: Colors.grey),
       title: Text(name),
       onTap: () {
-        // Cari lokasi berdasarkan nama hardcoded
-        controller.onSearchTextChanged(name);
-        // Atau bisa langsung set jika tau koordinatnya (tapi biar konsisten pakai search aja)
-        controller.searchLocationFromText(name, isPickup);
+        // FIX: Panggil selectLocation via PlaceResult
+        controller.selectLocation(
+          PlaceResult(title: name, subtitle: '', latLng: null),
+          isPickup,
+        );
       },
     );
   }
