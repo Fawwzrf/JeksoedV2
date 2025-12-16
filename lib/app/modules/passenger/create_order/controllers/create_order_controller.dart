@@ -2,11 +2,20 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
-import 'package:geolocator/geolocator.dart';
-import 'package:supabase_flutter/supabase_flutter.dart';
-import 'package:jeksoedv2/app/data/services/ride_service.dart';
-import 'package:jeksoedv2/data/services/places_service.dart';
-import 'package:jeksoedv2/data/models/place_models.dart';
+import 'package:geocoding/geocoding.dart';
+import '../../../../data/services/ride_service.dart';
+
+// Model untuk hasil pencarian (PlaceResult)
+class PlaceResult {
+  final String title;
+  final String subtitle;
+  final LatLng latLng;
+  PlaceResult({
+    required this.title,
+    required this.subtitle,
+    required this.latLng,
+  });
+}
 
 enum OrderStage { search, pickupConfirm, routeConfirm, findingDriver }
 
@@ -14,8 +23,6 @@ class CreateOrderController extends GetxController {
   static const String googleMapsApiKey = 'AIzaSyAuyoAFHTVJRA6WKBRGnDc1mQ1ZQk7pl2A';
   
   final RideService _rideService = Get.find<RideService>();
-  late final PlacesService _placesService;
-  final SupabaseClient _supabase = Supabase.instance.client;
 
   // Controllers
   final pickupController = TextEditingController();
@@ -35,38 +42,21 @@ class CreateOrderController extends GetxController {
   final currentStage = OrderStage.search.obs;
   final selectedVehicleType = 'motor'.obs;
 
-  // Price & Route Info
+  // Inisialisasi dengan 0 agar aman dari error null
   final estimatedPrice = 0.0.obs;
   final estimatedDistance = 0.0.obs;
   final estimatedDuration = 0.obs;
   String? encodedPolyline;
-  final routePolylinePoints = <LatLng>[].obs;
 
-  // Location & Search
-  final Rx<LatLng?> userLocation = Rx<LatLng?>(null);
-  LatLng? pickupLatLng;
-  LatLng? destLatLng;
-  final pickupQuery = 'Lokasi saat ini'.obs;
-  final destinationQuery = ''.obs;
-  final pickupAddress = ''.obs;
-  final destinationAddress = ''.obs;
-  
-  final predictions = <PlacePrediction>[].obs;
-  final savedPlaces = <SavedPlace>[].obs;
-  final isSearchingPickup = false.obs;
-  final isSearchingDestination = false.obs;
-  final isRouteLoading = false.obs;
+  final searchResults = <PlaceResult>[].obs;
+  final isSearchingLocation = false.obs;
+  Timer? _debounce;
 
-  Timer? _searchDebounce;
+  // Default coordinates (Purwokerto)
+  LatLng? pickupLatLng = const LatLng(-7.4242, 109.2303);
+  LatLng? destLatLng = const LatLng(-7.4000, 109.2500);
 
-  // User & Driver
-  final userPhotoUrl = Rx<String?>(null);
-  final driverLocations = <LatLng>[].obs;
-  final activeRideRequestId = Rx<String?>(null);
-  
-  StreamSubscription? _rideStatusSubscription;
-
-  // Vehicle Types
+  // PERBAIKAN 1: Menambahkan 'pricePerKm' agar View tidak error saat membacanya
   final vehicleTypes = [
     {
       'type': 'motor',
@@ -210,124 +200,117 @@ class CreateOrderController extends GetxController {
     );
   }
 
-  // --- SEARCH & PLACES ---
+  // --- LOCATION SEARCH ---
 
-  void onPickupQueryChanged(String query) {
-    pickupQuery.value = query;
-    isSearchingPickup.value = true;
-    isSearchingDestination.value = false;
-    predictions.clear();
-    _searchPlacesDebounced(query);
-  }
-
-  void onDestinationQueryChanged(String query) {
-    destinationQuery.value = query;
-    isSearchingDestination.value = true;
-    isSearchingPickup.value = false;
-    predictions.clear();
-    _searchPlacesDebounced(query);
-  }
-
-  void _searchPlacesDebounced(String query) {
-    _searchDebounce?.cancel();
-    _searchDebounce = Timer(const Duration(milliseconds: 500), () {
+  void onSearchTextChanged(String query) {
+    if (_debounce?.isActive ?? false) _debounce!.cancel();
+    _debounce = Timer(const Duration(milliseconds: 500), () {
       if (query.length > 2) {
         _searchPlaces(query);
       } else {
-        predictions.clear();
+        searchResults.clear();
       }
     });
   }
 
-  Future<void> _searchPlaces(String query) async {
+  Future<void> _searchPlacesApi(String query) async {
     try {
-      final results = await _placesService.searchPlaces(query);
-      predictions.value = results;
-    } catch (e) {
-      print('Error searching places: $e');
-      predictions.clear();
-    }
-  }
+      isSearchingLocation.value = true;
+      List<Location> locations = await locationFromAddress(query);
 
-  Future<void> onPredictionSelected(PlacePrediction prediction) async {
-    try {
-      final placeDetails = await _placesService.getPlaceDetails(prediction.placeId);
-      if (placeDetails == null) return;
+      if (locations.isNotEmpty) {
+        List<PlaceResult> results = [];
+        for (var loc in locations.take(5)) {
+          try {
+            List<Placemark> p = await placemarkFromCoordinates(
+              loc.latitude,
+              loc.longitude,
+            );
+            if (p.isNotEmpty) {
+              final place = p.first;
+              final title = place.street ?? place.name ?? query;
+              final subtitle = [
+                place.subLocality,
+                place.locality,
+              ].where((e) => e != null && e.isNotEmpty).join(", ");
 
-      if (isSearchingPickup.value) {
-        pickupLatLng = placeDetails.location;
-        pickupQuery.value = placeDetails.name;
-        pickupAddress.value = placeDetails.address;
-        await animateCameraToPosition(placeDetails.location);
-      } else {
-        destLatLng = placeDetails.location;
-        destinationQuery.value = placeDetails.name;
-        destinationAddress.value = placeDetails.address;
-      }
-
-      predictions.clear();
-      isSearchingPickup.value = false;
-      isSearchingDestination.value = false;
-
-      // If both locations set, move to pickup confirm
-      if (pickupLatLng != null && destLatLng != null) {
-        currentStage.value = OrderStage.pickupConfirm;
-      }
-    } catch (e) {
-      print('Error selecting prediction: $e');
-    }
-  }
-
-  Future<void> onSavedPlaceSelected(SavedPlace place) async {
-    try {
-      final placeDetails = await _placesService.getPlaceDetails(place.placeId);
-      if (placeDetails == null) return;
-
-      // Saved places always set as destination
-      destLatLng = placeDetails.location;
-      destinationQuery.value = placeDetails.name;
-      destinationAddress.value = placeDetails.address;
-
-      predictions.clear();
-      isSearchingDestination.value = false;
-
-      if (pickupLatLng != null) {
-        currentStage.value = OrderStage.pickupConfirm;
+              results.add(
+                PlaceResult(
+                  title: title,
+                  subtitle: subtitle,
+                  latLng: LatLng(loc.latitude, loc.longitude),
+                ),
+              );
+            }
+          } catch (_) {}
+        }
+        searchResults.value = results;
       }
     } catch (e) {
-      print('Error selecting saved place: $e');
+      print("Search Error: $e");
+    } finally {
+      isSearchingLocation.value = false;
     }
   }
 
-  void onTextFieldFocus() {
-    // Expand bottom sheet (handled in view)
-  }
-
-  void onLocationClick() {
-    // Set current location as pickup
-    if (userLocation.value != null) {
-      pickupLatLng = userLocation.value;
-      pickupQuery.value = 'Lokasi saat ini';
-      pickupAddress.value = 'Menggunakan lokasi Anda saat ini';
-      animateCameraToPosition(userLocation.value!);
-    }
-  }
-
-  void clearQuery({required bool isPickup}) {
+  // PERBAIKAN 2: Menambahkan method yang dipanggil oleh View (_buildLocationInput & List)
+  void selectLocationFromSuggestion(PlaceResult place, bool isPickup) {
     if (isPickup) {
-      pickupQuery.value = '';
-      pickupLatLng = null;
-      predictions.clear();
+      pickupController.text = place.title;
+      pickupLatLng = place.latLng;
     } else {
-      destinationQuery.value = '';
-      destLatLng = null;
-      predictions.clear();
+      destinationController.text = place.title;
+      destLatLng = place.latLng;
+    }
+    searchResults.clear();
+    Get.back(); // Menutup bottom sheet
+  }
+
+  // PERBAIKAN 3: Menambahkan method untuk Quick Suggestion
+  Future<void> searchLocationFromText(String query, bool isPickup) async {
+    try {
+      isLoading.value = true;
+      List<Location> locations = await locationFromAddress(query);
+      if (locations.isNotEmpty) {
+        final loc = locations.first;
+        final latLng = LatLng(loc.latitude, loc.longitude);
+
+        if (isPickup) {
+          pickupController.text = query;
+          pickupLatLng = latLng;
+        } else {
+          destinationController.text = query;
+          destLatLng = latLng;
+        }
+
+        if (Get.isBottomSheetOpen ?? false) Get.back();
+      }
+    } catch (e) {
+      Get.snackbar("Error", "Lokasi tidak ditemukan");
+    } finally {
+      isLoading.value = false;
     }
   }
 
-  // --- ORDER FLOW ---
+  // Helper untuk setter manual (dipakai di view _selectLocation)
+  void setPickupLocation(String address, LatLng latLng) {
+    pickupController.text = address;
+    pickupLatLng = latLng;
+  }
 
-  void onProceedClick() async {
+  void setDestinationLocation(String address, LatLng latLng) {
+    destinationController.text = address;
+    destLatLng = latLng;
+  }
+
+  // --- ORDER LOGIC ---
+
+  void selectVehicleType(String type) {
+    selectedVehicleType.value = type;
+    _recalculatePriceOnly();
+  }
+
+  Future<void> calculateRouteAndPrice() async {
     if (pickupLatLng == null || destLatLng == null) return;
     
     isRouteLoading.value = true;
@@ -354,8 +337,7 @@ class CreateOrderController extends GetxController {
       // Move to route confirm AFTER data is ready
       currentStage.value = OrderStage.routeConfirm;
     } catch (e) {
-      print('Error getting route: $e');
-      Get.snackbar('Error', 'Gagal menghitung rute');
+      Get.snackbar("Error", "Gagal menghitung rute: $e");
     } finally {
       isRouteLoading.value = false;
     }
@@ -372,21 +354,40 @@ class CreateOrderController extends GetxController {
     );
   }
 
-  void selectVehicleType(String type) {
-    selectedVehicleType.value = type;
-    _recalculatePriceOnly();
+  void nextStage() async {
+    switch (currentStage.value) {
+      case OrderStage.search:
+        if (isFormValid.value) {
+          currentStage.value = OrderStage.pickupConfirm;
+        }
+        break;
+      case OrderStage.pickupConfirm:
+        await calculateRouteAndPrice();
+        currentStage.value = OrderStage.routeConfirm;
+        break;
+      case OrderStage.routeConfirm:
+        createRideRequest();
+        break;
+      case OrderStage.findingDriver:
+        Get.offAllNamed('/passenger-main');
+        break;
+    }
   }
 
-  void onBackClick() {
-    if (currentStage.value == OrderStage.search) {
-      // Go back to previous screen (passenger main)
-      Get.back();
-    } else if (currentStage.value == OrderStage.pickupConfirm) {
-      currentStage.value = OrderStage.search;
-      destLatLng = null;
-      destinationQuery.value = '';
-    } else if (currentStage.value == OrderStage.routeConfirm) {
-      currentStage.value = OrderStage.pickupConfirm;
+  void previousStage() {
+    switch (currentStage.value) {
+      case OrderStage.pickupConfirm:
+        currentStage.value = OrderStage.search;
+        break;
+      case OrderStage.routeConfirm:
+        currentStage.value = OrderStage.pickupConfirm;
+        break;
+      case OrderStage.findingDriver:
+        currentStage.value = OrderStage.routeConfirm;
+        break;
+      case OrderStage.search:
+        Get.back();
+        break;
     }
   }
 
@@ -426,58 +427,19 @@ class CreateOrderController extends GetxController {
         }
       }
     } catch (e) {
-      print('Error creating order: $e');
-      Get.snackbar('Error', 'Gagal membuat pesanan');
+      Get.snackbar('Error', 'Gagal membuat pesanan: $e');
     } finally {
       isLoading.value = false;
     }
   }
 
-  void _listenToRideStatus(String rideId) {
-    _rideStatusSubscription?.cancel();
-    
-    // Listen to ride status changes
-    _rideStatusSubscription = _supabase
-        .from('rides')
-        .stream(primaryKey: ['id'])
-        .eq('id', rideId)
-        .listen((List<Map<String, dynamic>> data) {
-          if (data.isNotEmpty) {
-            final status = data.first['status'];
-            if (status == 'accepted') {
-              // Navigate to trip screen
-              Get.offNamed('/trip/$rideId');
-            }
-          }
-        });
-  }
+  void cancelSearch() => Get.back();
 
-  void onCancelClick() async {
-    try {
-      if (activeRideRequestId.value != null) {
-        // Cancel ride in database
-        await _supabase
-            .from('ride_requests')
-            .update({'status': 'cancelled'})
-            .eq('id', activeRideRequestId.value!);
-      }
-      
-      _rideStatusSubscription?.cancel();
-      activeRideRequestId.value = null;
-      currentStage.value = OrderStage.routeConfirm;
-    } catch (e) {
-      print('Error cancelling order: $e');
-    }
-  }
-
-  // Helper untuk get route info
-  Map<String, String>? get routeInfo {
-    if (estimatedPrice.value == 0) return null;
-    
-    return {
-      'price': 'Rp ${estimatedPrice.value.toStringAsFixed(0)}',
-      'distance': '${estimatedDistance.value.toStringAsFixed(1)} km',
-      'duration': '${estimatedDuration.value} menit',
-    };
+  @override
+  void onClose() {
+    pickupController.dispose();
+    destinationController.dispose();
+    notesController.dispose();
+    super.onClose();
   }
 }

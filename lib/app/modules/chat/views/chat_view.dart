@@ -33,7 +33,7 @@ class ChatView extends GetView<ChatController> {
               ),
             ),
             ChatMessageInput(
-              messageText: uiState.messageText,
+              controller: controller.messageController,
               isUploading: uiState.isUploading,
               onMessageChanged: controller.onMessageChanged,
               onSendMessage: controller.sendMessage,
@@ -289,7 +289,7 @@ class ClipRoundedRectangle extends StatelessWidget {
 }
 
 class ChatMessageInput extends StatelessWidget {
-  final String messageText;
+  final TextEditingController controller;
   final bool isUploading;
   final Function(String) onMessageChanged;
   final VoidCallback onSendMessage;
@@ -297,7 +297,7 @@ class ChatMessageInput extends StatelessWidget {
 
   const ChatMessageInput({
     super.key,
-    required this.messageText,
+    required this.controller,
     required this.isUploading,
     required this.onMessageChanged,
     required this.onSendMessage,
@@ -306,9 +306,6 @@ class ChatMessageInput extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final controller = TextEditingController(text: messageText)
-      ..selection = TextSelection.collapsed(offset: messageText.length);
-
     return Container(
       decoration: const BoxDecoration(
         color: Colors.white,
@@ -342,7 +339,7 @@ class ChatMessageInput extends StatelessWidget {
                     borderRadius: BorderRadius.circular(25),
                     borderSide: const BorderSide(color: Colors.grey),
                   ),
-                  suffixIcon: messageText.trim().isEmpty
+                  suffixIcon: controller.text.trim().isEmpty
                       ? IconButton(
                           icon: isUploading
                               ? const SizedBox(
@@ -366,7 +363,7 @@ class ChatMessageInput extends StatelessWidget {
                 ),
                 textInputAction: TextInputAction.send,
                 onSubmitted: (_) =>
-                    messageText.trim().isNotEmpty ? onSendMessage() : null,
+                    controller.text.trim().isNotEmpty ? onSendMessage() : null,
               ),
             ),
           ],
