@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import '../../../../../data/models/ride_request.dart';
 import '../../../../../utils/app_colors.dart';
+import '../../../../../utils/currency_formatter.dart';
 
 class RideRequestPopup extends StatelessWidget {
   final RideRequest rideRequest;
@@ -69,7 +70,7 @@ class RideRequestPopup extends StatelessWidget {
                         ),
                       ),
                       Text(
-                        'Rp ${rideRequest.fare}',
+                        formatCurrency(rideRequest.fare ?? 0),
                         style: TextStyle(
                           fontSize: 16,
                           fontWeight: FontWeight.w600,

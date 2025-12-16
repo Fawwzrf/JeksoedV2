@@ -5,6 +5,7 @@ import 'package:get/get.dart';
 import '../controllers/all_orders_controller.dart';
 import '../../../../../data/models/ride_request.dart';
 import '../../../../../utils/app_colors.dart';
+import '../../../../../utils/currency_formatter.dart';
 
 class AllOrdersView extends GetView<AllOrdersController> {
   const AllOrdersView({super.key});
@@ -165,7 +166,7 @@ class AllOrdersView extends GetView<AllOrdersController> {
                       borderRadius: BorderRadius.circular(20),
                     ),
                     child: Text(
-                      'Rp ${rideRequest.fare}',
+                      formatCurrency(rideRequest.fare ?? 0),
                       style: const TextStyle(
                         color: AppColors.primaryDark,
                         fontWeight: FontWeight.bold,

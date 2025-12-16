@@ -5,6 +5,7 @@ import 'package:geolocator/geolocator.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../../../../data/models/ride_request.dart';
 import '../../../../../data/models/driver_profile.dart';
+import '../../../../../utils/currency_formatter.dart';
 
 class DriverHomeController extends GetxController {
   final SupabaseClient _supabase = Supabase.instance.client;
@@ -186,7 +187,7 @@ class DriverHomeController extends GetxController {
                   name: row['nama'] ?? row['name'] ?? 'Driver',
                   licensePlate: row['license_number'] ?? '',
                   photoUrl: row['photo_url'],
-                  balance: 'Rp${row['balance'] ?? 0}',
+                  balance: formatCurrency(row['balance'] ?? 0),
                   rating: averageRating.toStringAsFixed(1),
                   orderCount: '${row['completed_trips'] ?? 0}',
                 );

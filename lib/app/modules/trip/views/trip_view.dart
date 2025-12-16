@@ -9,6 +9,7 @@ import '../components/trip_driver_bottom_sheet.dart';
 import '../components/trip_passenger_sheet.dart';
 import '../components/payment_confirmation_card.dart';
 import '../../../../utils/app_colors.dart';
+import '../../../../utils/currency_formatter.dart';
 
 class TripView extends GetView<TripController> {
   const TripView({super.key});
@@ -223,17 +224,16 @@ class _TripScreenLayoutState extends State<TripScreenLayout> {
             ),
           ),
 
-          // Bottom Sheet (hide when payment confirmation is showing)
           if (!(request?.status == 'completed' && widget.uiState.isDriver))
             Positioned(bottom: 0, left: 0, right: 0, child: _buildBottomSheet()),
 
           if (request?.status == 'completed' && widget.uiState.isDriver)
             Positioned(
-              bottom: 100,
+              bottom: 0,
               left: 0,
               right: 0,
               child: PaymentConfirmationCard(
-                totalPayment: 'Rp${request?.fare ?? 0}',
+                totalPayment: formatCurrency(request?.fare ?? 0),
                 onConfirmClick: widget.onFinishTrip,
               ),
             ),

@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import '../controllers/trip_controller.dart';
 import 'slide_to_confirm_button.dart';
 import '../../../../utils/app_colors.dart';
+import '../../../../utils/currency_formatter.dart';
 
 class TripDriverBottomSheet extends StatefulWidget {
   final TripUiState uiState;
@@ -131,7 +132,7 @@ class _TripDriverBottomSheetState extends State<TripDriverBottomSheet> {
   }
 
   Widget _buildStatusContent(dynamic rideRequest) {
-    final formattedPrice = 'Rp${rideRequest.fare}';
+    final formattedPrice = formatCurrency(rideRequest.fare ?? 0);
     final isLoading = widget.uiState.isUpdating; // Ambil status loading
 
     switch (rideRequest.status) {

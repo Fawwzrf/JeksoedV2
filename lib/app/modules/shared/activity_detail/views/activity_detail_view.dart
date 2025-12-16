@@ -6,6 +6,7 @@ import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:intl/intl.dart';
 import '../controllers/activity_detail_controller.dart';
 import '../../../../../utils/app_colors.dart';
+import '../../../../../utils/currency_formatter.dart';
 
 class ActivityDetailView extends GetView<ActivityDetailController> {
   const ActivityDetailView({super.key});
@@ -244,7 +245,7 @@ class _DetailSheet extends StatelessWidget {
                 style: TextStyle(color: Colors.grey),
               ),
               Text(
-                'Rp ${ride.fare}',
+                formatCurrency(ride.fare ?? 0),
                 style: const TextStyle(fontWeight: FontWeight.bold),
               ),
             ],

@@ -3,6 +3,7 @@
 import 'package:flutter/material.dart';
 import '../controllers/trip_controller.dart';
 import '../../../../utils/app_colors.dart';
+import '../../../../utils/currency_formatter.dart';
 
 class TripPassengerSheet extends StatelessWidget {
   final TripUiState uiState;
@@ -128,7 +129,7 @@ class TripPassengerSheet extends StatelessWidget {
                   style: TextStyle(color: Colors.grey),
                 ),
                 Text(
-                  'Rp${rideRequest.fare ?? 0}',
+                  formatCurrency(rideRequest.fare ?? 0),
                   style: const TextStyle(
                     fontWeight: FontWeight.bold,
                     fontSize: 16,

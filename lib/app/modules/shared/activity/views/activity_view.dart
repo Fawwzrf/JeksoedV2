@@ -5,6 +5,7 @@ import 'package:get/get.dart';
 import 'package:intl/intl.dart';
 import '../controllers/activity_controller.dart';
 import '../../../../../utils/app_colors.dart';
+import '../../../../../utils/currency_formatter.dart';
 
 class ActivityView extends GetView<ActivityController> {
   const ActivityView({super.key});
@@ -215,7 +216,7 @@ class ActivityView extends GetView<ActivityController> {
                               ),
                             ),
                             Text(
-                              'Rp ${ride.fare}',
+                              formatCurrency(ride.fare ?? 0),
                               style: const TextStyle(
                                 fontWeight: FontWeight.bold,
                                 fontSize: 14,
