@@ -202,12 +202,14 @@ class EditProfileController extends GetxController {
   @override
   void onInit() {
     super.onInit();
-    // Kosongkan inisialisasi Get.find di onInit, pindahkan ke onReady
   }
 
   Future<void> pickImage() async {
     final picker = ImagePicker();
-    final picked = await picker.pickImage(source: ImageSource.gallery, imageQuality: 80);
+    final picked = await picker.pickImage(
+      source: ImageSource.gallery,
+      imageQuality: 50,
+    );
     if (picked != null) {
       pickedImage.value = File(picked.path);
     }
@@ -218,13 +220,34 @@ class EditProfileController extends GetxController {
       final supabase = Supabase.instance.client;
       final user = supabase.auth.currentUser;
       if (user == null) return null;
+
       final fileExt = file.path.split('.').last;
-      final fileName = 'profile_${user.id}_${DateTime.now().millisecondsSinceEpoch}.$fileExt';
-      final storageRes = await supabase.storage.from('profile-photos').upload(fileName, file);
-      if (storageRes.isEmpty) return null;
-      final publicUrl = supabase.storage.from('profile-photos').getPublicUrl(fileName);
+
+      final fileName =
+          '${user.id}/avatar_${DateTime.now().millisecondsSinceEpoch}.$fileExt';
+
+      await supabase.storage
+          .from('avatars')
+          .upload(
+            fileName,
+            file,
+            fileOptions: FileOptions(
+              upsert: true,
+              contentType:
+                  'image/$fileExt', // Memberitahu server ini file gambar
+            ),
+          );
+
+      // Ambil URL Publik
+      final publicUrl = supabase.storage.from('avatars').getPublicUrl(fileName);
       return publicUrl;
+    } on StorageException catch (e) {
+      // Tangkap error spesifik dari Supabase Storage
+      print("Storage Error: ${e.message}");
+      Get.snackbar('Gagal Upload', 'Ditolak Server: ${e.message}');
+      return null;
     } catch (e) {
+      print("Upload Error: $e");
       Get.snackbar('Error', 'Gagal upload foto: $e');
       return null;
     }
@@ -235,30 +258,62 @@ class EditProfileController extends GetxController {
     try {
       final supabase = Supabase.instance.client;
       final user = supabase.auth.currentUser;
+
+      if (user == null) {
+        Get.snackbar("Error", "Sesi habis, login ulang");
+        return;
+      }
+
       String? uploadedPhotoUrl = photoUrl.value;
+
+      // 1. Upload Foto Dulu (Jika ada yang dipilih)
       if (pickedImage.value != null) {
         final url = await uploadPhoto(pickedImage.value!);
-        if (url != null) uploadedPhotoUrl = url;
+        if (url != null) {
+          uploadedPhotoUrl = url;
+        } else {
+          // Jika upload gagal, berhenti di sini (jangan lanjut update profile)
+          isLoading.value = false;
+          return;
+        }
       }
-      if (user != null) {
-        await supabase.from('users').update({
-          'name': nameController.text,
-          'email': emailController.text,
-          'photo_url': uploadedPhotoUrl,
-        }).eq('id', user.id);
-        // Update email jika berubah
-        if (user.email != emailController.text) {
-          await supabase.auth.updateUser(UserAttributes(email: emailController.text));
-        }
-        // Update password jika diisi
-        if (passwordController.text.isNotEmpty) {
-          await supabase.auth.updateUser(UserAttributes(password: passwordController.text));
-        }
+
+      // 2. Update Database User
+      await supabase
+          .from('users')
+          .update({
+            'name': nameController.text,
+            'email': emailController.text,
+            'photo_url': uploadedPhotoUrl,
+          })
+          .eq('id', user.id);
+
+      // 3. Update Auth (Email/Pass)
+      if (user.email != emailController.text) {
+        await supabase.auth.updateUser(
+          UserAttributes(email: emailController.text),
+        );
+      }
+      if (passwordController.text.isNotEmpty) {
+        await supabase.auth.updateUser(
+          UserAttributes(password: passwordController.text),
+        );
+      }
+
+      // 4. Refresh Data di Halaman Profil Utama
+      if (Get.isRegistered<ProfileController>()) {
         Get.find<ProfileController>().fetchUserData();
-        Get.back();
-        Get.snackbar('Berhasil', 'Profil berhasil diperbarui');
       }
+
+      Get.back();
+      Get.snackbar(
+        'Berhasil',
+        'Profil berhasil diperbarui',
+        backgroundColor: Colors.green,
+        colorText: Colors.white,
+      );
     } catch (e) {
+      print("Update Profile Error: $e");
       Get.snackbar('Error', 'Gagal memperbarui profil: $e');
     } finally {
       isLoading.value = false;
