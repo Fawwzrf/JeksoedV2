@@ -16,25 +16,27 @@ class CreateOrderView extends GetView<CreateOrderController> {
       backgroundColor: AppColors.surface,
       body: Obx(() {
         final stage = controller.currentStage.value;
-        
+
         // Calculate sheet peek height based on stage
         final sheetPeekHeight = _getSheetPeekHeight(context, stage);
-        
+
         return Stack(
           children: [
             // Google Map Background
             _buildGoogleMap(),
-            
+
             if (stage == OrderStage.routeConfirm ||
                 stage == OrderStage.findingDriver)
-              Obx(() => TopRouteInfoBar(
-                pickup: controller.pickupQuery.value,
-                destination: controller.destinationQuery.value,
-              )),
-            
+              Obx(
+                () => TopRouteInfoBar(
+                  pickup: controller.pickupQuery.value,
+                  destination: controller.destinationQuery.value,
+                ),
+              ),
+
             // Back Button
             _buildBackButton(context, stage, sheetPeekHeight),
-            
+
             // Bottom Sheet with Content
             _buildBottomSheet(context, sheetPeekHeight),
           ],
@@ -47,7 +49,7 @@ class CreateOrderView extends GetView<CreateOrderController> {
     return Obx(() {
       final stage = controller.currentStage.value;
       final isBlurred = stage == OrderStage.findingDriver;
-      
+
       return Stack(
         children: [
           GoogleMap(
@@ -65,9 +67,7 @@ class CreateOrderView extends GetView<CreateOrderController> {
             Positioned.fill(
               child: BackdropFilter(
                 filter: ImageFilter.blur(sigmaX: 5.0, sigmaY: 5.0),
-                child: Container(
-                  color: Colors.black.withOpacity(0.1),
-                ),
+                child: Container(color: Colors.black.withOpacity(0.1)),
               ),
             ),
         ],
@@ -77,19 +77,21 @@ class CreateOrderView extends GetView<CreateOrderController> {
 
   Set<Marker> _buildMarkers() {
     final markers = <Marker>{};
-    
+
     // Pickup Marker (with custom user photo marker)
     if (controller.pickupLatLng != null) {
       markers.add(
         Marker(
           markerId: const MarkerId('pickup'),
           position: controller.pickupLatLng!,
-          icon: BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueYellow),
+          icon: BitmapDescriptor.defaultMarkerWithHue(
+            BitmapDescriptor.hueYellow,
+          ),
           infoWindow: const InfoWindow(title: 'Lokasi Jemput'),
         ),
       );
     }
-    
+
     // Destination Marker
     if (controller.destLatLng != null) {
       markers.add(
@@ -101,53 +103,72 @@ class CreateOrderView extends GetView<CreateOrderController> {
         ),
       );
     }
-    
+
     // Driver Markers
     for (int i = 0; i < controller.driverLocations.length; i++) {
       markers.add(
         Marker(
           markerId: MarkerId('driver_$i'),
           position: controller.driverLocations[i],
-          icon: BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueViolet),
+          icon: BitmapDescriptor.defaultMarkerWithHue(
+            BitmapDescriptor.hueViolet,
+          ),
           infoWindow: const InfoWindow(title: 'Driver'),
         ),
       );
     }
-    
+
     return markers;
   }
 
   Set<Polyline> _buildPolylines() {
     final polylines = <Polyline>{};
-    
-    // Route Polyline (when in route confirm or finding driver stage)
+
+    // Cek stage
     if (controller.currentStage.value == OrderStage.routeConfirm ||
         controller.currentStage.value == OrderStage.findingDriver) {
-      if (controller.pickupLatLng != null && controller.destLatLng != null) {
+      // Pastikan ada titik koordinat jalannya
+      if (controller.routePolylinePoints.isNotEmpty) {
         polylines.add(
           Polyline(
             polylineId: const PolylineId('route'),
-            points: [
-              controller.pickupLatLng!,
-              controller.destLatLng!,
-            ],
+            points: controller.routePolylinePoints.toList(),
+            color: AppColors.primary,
+            width: 5,
+            jointType: JointType.round, // Biar lekukan jalan halus
+            startCap: Cap.roundCap,
+            endCap: Cap.roundCap,
+            geodesic: true,
+          ),
+        );
+      } else if (controller.pickupLatLng != null &&
+          controller.destLatLng != null) {
+        // Fallback: Jika decode gagal, baru pakai garis lurus (daripada kosong)
+        polylines.add(
+          Polyline(
+            polylineId: const PolylineId('route_direct'),
+            points: [controller.pickupLatLng!, controller.destLatLng!],
             color: AppColors.primary,
             width: 5,
           ),
         );
       }
     }
-    
+
     return polylines;
   }
 
-  Widget _buildBackButton(BuildContext context, OrderStage stage, double sheetPeekHeight) {
+  Widget _buildBackButton(
+    BuildContext context,
+    OrderStage stage,
+    double sheetPeekHeight,
+  ) {
     if (stage == OrderStage.findingDriver) {
       return const SizedBox.shrink(); // No back button when finding driver
     }
-    
+
     final isRouteConfirm = stage == OrderStage.routeConfirm;
-    
+
     return Positioned(
       top: isRouteConfirm ? 170 : 50, // Below TopRouteInfoBar for route confirm
       bottom: null,
@@ -165,10 +186,7 @@ class CreateOrderView extends GetView<CreateOrderController> {
               color: Colors.white,
               shape: BoxShape.circle,
             ),
-            child: const Icon(
-              Icons.arrow_back,
-              color: Colors.black,
-            ),
+            child: const Icon(Icons.arrow_back, color: Colors.black),
           ),
         ),
       ),
@@ -233,13 +251,15 @@ class CreateOrderView extends GetView<CreateOrderController> {
             savedPlaces: controller.savedPlaces.toList(),
             onPickupQueryChanged: controller.onPickupQueryChanged,
             onDestinationQueryChanged: controller.onDestinationQueryChanged,
-            onPredictionSelected: (pred) => controller.onPredictionSelected(pred),
-            onSavedPlaceSelected: (place) => controller.onSavedPlaceSelected(place),
+            onPredictionSelected: (pred) =>
+                controller.onPredictionSelected(pred),
+            onSavedPlaceSelected: (place) =>
+                controller.onSavedPlaceSelected(place),
             onTextFieldFocus: controller.onTextFieldFocus,
             onLocationClick: controller.onLocationClick,
             clearQuery: controller.clearQuery,
           );
-        
+
         case OrderStage.pickupConfirm:
           return PickupConfirmStage(
             destinationQuery: controller.destinationQuery.value,
@@ -248,28 +268,28 @@ class CreateOrderView extends GetView<CreateOrderController> {
             onProceedClick: controller.onProceedClick,
             onBackClick: controller.onBackClick,
           );
-        
+
         case OrderStage.routeConfirm:
-          return Obx(() => RouteConfirmStage(
-            routeInfo: controller.routeInfo,
-            onCreateOrderClick: controller.onCreateOrderClick,
-          ));
-        
-        case OrderStage.findingDriver:
-          return FindingDriverStage(
-            onCancelClick: controller.onCancelClick,
+          return Obx(
+            () => RouteConfirmStage(
+              routeInfo: controller.routeInfo,
+              onCreateOrderClick: controller.onCreateOrderClick,
+            ),
           );
+
+        case OrderStage.findingDriver:
+          return FindingDriverStage(onCancelClick: controller.onCancelClick);
       }
     });
   }
 
   double _getSheetPeekHeight(BuildContext context, OrderStage stage) {
     final screenHeight = MediaQuery.of(context).size.height;
-    
+
     return switch (stage) {
       OrderStage.search => screenHeight * 0.6,
       OrderStage.pickupConfirm => 300,
-      OrderStage.routeConfirm => screenHeight * 0.42, 
+      OrderStage.routeConfirm => screenHeight * 0.42,
       OrderStage.findingDriver => 300,
     };
   }
