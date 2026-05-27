@@ -1,6 +1,6 @@
 # JeksoedV2
 
-JeksoedV2 adalah aplikasi *ride-hailing* (ojek online) yang dikembangkan menggunakan Flutter. Aplikasi ini mencakup berbagai fitur utama seperti pemesanan perjalanan, manajemen status perjalanan (*trip management*), pelacakan lokasi secara real-time dengan Google Maps, serta manajemen driver dan penumpang.
+JeksoedV2 adalah aplikasi ride-hailing (ojek online) komprehensif yang dibangun menggunakan Flutter, GetX, dan Supabase untuk manajemen pesanan serta pelacakan lokasi real-time dengan Google Maps.
 
 ## 🚀 Tech Stack
 
