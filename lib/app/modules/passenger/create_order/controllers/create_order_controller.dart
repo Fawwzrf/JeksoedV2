@@ -7,12 +7,14 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:jeksoedv2/app/data/services/ride_service.dart';
 import 'package:jeksoedv2/data/services/places_service.dart';
 import 'package:jeksoedv2/data/models/place_models.dart';
+import 'package:flutter_polyline_points/flutter_polyline_points.dart';
 
 enum OrderStage { search, pickupConfirm, routeConfirm, findingDriver }
 
 class CreateOrderController extends GetxController {
-  static const String googleMapsApiKey = 'AIzaSyAuyoAFHTVJRA6WKBRGnDc1mQ1ZQk7pl2A';
-  
+  static const String googleMapsApiKey =
+      'AIzaSyAuyoAFHTVJRA6WKBRGnDc1mQ1ZQk7pl2A';
+
   final RideService _rideService = Get.find<RideService>();
   late final PlacesService _placesService;
   final SupabaseClient _supabase = Supabase.instance.client;
@@ -50,7 +52,7 @@ class CreateOrderController extends GetxController {
   final destinationQuery = ''.obs;
   final pickupAddress = ''.obs;
   final destinationAddress = ''.obs;
-  
+
   final predictions = <PlacePrediction>[].obs;
   final savedPlaces = <SavedPlace>[].obs;
   final isSearchingPickup = false.obs;
@@ -63,7 +65,7 @@ class CreateOrderController extends GetxController {
   final userPhotoUrl = Rx<String?>(null);
   final driverLocations = <LatLng>[].obs;
   final activeRideRequestId = Rx<String?>(null);
-  
+
   StreamSubscription? _rideStatusSubscription;
 
   // Vehicle Types
@@ -88,11 +90,11 @@ class CreateOrderController extends GetxController {
   void onInit() {
     super.onInit();
     _placesService = PlacesService(apiKey: googleMapsApiKey);
-    
+
     if (vehicleTypes.isNotEmpty) {
       selectedVehicleType.value = vehicleTypes[0]['type'] as String;
     }
-    
+
     _initializeUserLocation();
     _fetchUserData();
     _loadSavedPlaces();
@@ -124,7 +126,7 @@ class CreateOrderController extends GetxController {
       pickupLatLng = userLocation.value;
       pickupQuery.value = 'Lokasi saat ini';
       pickupAddress.value = 'Menggunakan lokasi Anda saat ini';
-      
+
       if (mapController != null) {
         animateCameraToPosition(userLocation.value!);
       }
@@ -189,10 +191,7 @@ class CreateOrderController extends GetxController {
   Future<void> animateCameraToPosition(LatLng position) async {
     await mapController?.animateCamera(
       CameraUpdate.newCameraPosition(
-        CameraPosition(
-          target: position,
-          zoom: 16,
-        ),
+        CameraPosition(target: position, zoom: 16),
       ),
     );
   }
@@ -200,12 +199,20 @@ class CreateOrderController extends GetxController {
   Future<void> animateCameraToBounds(LatLng pickup, LatLng destination) async {
     final bounds = LatLngBounds(
       southwest: LatLng(
-        pickup.latitude < destination.latitude ? pickup.latitude : destination.latitude,
-        pickup.longitude < destination.longitude ? pickup.longitude : destination.longitude,
+        pickup.latitude < destination.latitude
+            ? pickup.latitude
+            : destination.latitude,
+        pickup.longitude < destination.longitude
+            ? pickup.longitude
+            : destination.longitude,
       ),
       northeast: LatLng(
-        pickup.latitude > destination.latitude ? pickup.latitude : destination.latitude,
-        pickup.longitude > destination.longitude ? pickup.longitude : destination.longitude,
+        pickup.latitude > destination.latitude
+            ? pickup.latitude
+            : destination.latitude,
+        pickup.longitude > destination.longitude
+            ? pickup.longitude
+            : destination.longitude,
       ),
     );
 
@@ -255,7 +262,9 @@ class CreateOrderController extends GetxController {
 
   Future<void> onPredictionSelected(PlacePrediction prediction) async {
     try {
-      final placeDetails = await _placesService.getPlaceDetails(prediction.placeId);
+      final placeDetails = await _placesService.getPlaceDetails(
+        prediction.placeId,
+      );
       if (placeDetails == null) return;
 
       if (isSearchingPickup.value) {
@@ -331,13 +340,14 @@ class CreateOrderController extends GetxController {
 
   // --- ORDER FLOW ---
 
+  // --- ORDER FLOW ---
+
   Future<void> onProceedClick() async {
     if (pickupLatLng == null || destLatLng == null) return;
-    
+
     isRouteLoading.value = true;
-    
+
     try {
-      // Get route details
       final routeDetails = await _rideService.getRouteDetails(
         origin: pickupLatLng!,
         destination: destLatLng!,
@@ -345,20 +355,41 @@ class CreateOrderController extends GetxController {
 
       estimatedDistance.value = routeDetails.distanceKm;
       estimatedDuration.value = routeDetails.durationMins;
-      encodedPolyline = routeDetails.encodedPolyline;
+
+      PolylinePoints polylinePoints = PolylinePoints(apiKey: googleMapsApiKey);
+
+      PolylineResult result = await polylinePoints.getRouteBetweenCoordinates(
+        request: PolylineRequest(
+          origin: PointLatLng(pickupLatLng!.latitude, pickupLatLng!.longitude),
+          destination: PointLatLng(destLatLng!.latitude, destLatLng!.longitude),
+          mode: TravelMode.driving,
+        ),
+      );
+
+      if (result.status == 'OK' && result.points.isNotEmpty) {
+        routePolylinePoints.value = result.points
+            .map((point) => LatLng(point.latitude, point.longitude))
+            .toList();
+      } else {
+        print("Gagal fetch rute jalan: ${result.errorMessage}");
+        routePolylinePoints.clear();
+      }
 
       // Calculate price
       _recalculatePriceOnly();
-      
-      print('Route calculated: Price=${estimatedPrice.value}, Distance=${estimatedDistance.value}, Duration=${estimatedDuration.value}');
+
+      print(
+        'Route calculated: Price=${estimatedPrice.value}, Distance=${estimatedDistance.value}, Duration=${estimatedDuration.value}',
+      );
 
       // Animate camera to show route
       await animateCameraToBounds(pickupLatLng!, destLatLng!);
-      
+
       // Move to route confirm AFTER data is ready
       currentStage.value = OrderStage.routeConfirm;
     } catch (e) {
       Get.snackbar("Error", "Gagal menghitung rute: $e");
+      print(e);
     } finally {
       isRouteLoading.value = false;
     }
@@ -397,7 +428,7 @@ class CreateOrderController extends GetxController {
 
     try {
       isLoading.value = true;
-      
+
       final success = await _rideService.requestRide(
         pickupLocation: LocationData(
           latitude: pickupLatLng!.latitude,
@@ -436,7 +467,7 @@ class CreateOrderController extends GetxController {
 
   void _listenToRideStatus(String rideId) {
     _rideStatusSubscription?.cancel();
-    
+
     // Listen to ride status changes
     _rideStatusSubscription = _supabase
         .from('ride_requests')
@@ -462,7 +493,7 @@ class CreateOrderController extends GetxController {
             .update({'status': 'cancelled'})
             .eq('id', activeRideRequestId.value!);
       }
-      
+
       _rideStatusSubscription?.cancel();
       activeRideRequestId.value = null;
       currentStage.value = OrderStage.routeConfirm;
@@ -474,7 +505,7 @@ class CreateOrderController extends GetxController {
   // Helper untuk get route info
   Map<String, String>? get routeInfo {
     if (estimatedPrice.value == 0) return null;
-    
+
     return {
       'price': 'Rp ${estimatedPrice.value.toStringAsFixed(0)}',
       'distance': '${estimatedDistance.value.toStringAsFixed(1)} km',
