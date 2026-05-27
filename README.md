@@ -1,62 +1,80 @@
-# JeksoedV2
+# 🛵 JeksoedV2
 
 JeksoedV2 adalah aplikasi ride-hailing (ojek online) komprehensif yang dibangun menggunakan Flutter, GetX, dan Supabase untuk manajemen pesanan serta pelacakan lokasi real-time dengan Google Maps.
 
-## 🚀 Tech Stack
+<div align="center">
 
-- **Framework**: Flutter
-- **State Management & Routing**: GetX
-- **Backend & Authentication**: Supabase
-- **Maps & Location**: Google Maps Flutter, Geolocator, Geocoding
-- **Architecture**: MVC (Model-View-Controller) / Modular Pattern via GetX
+![Flutter](https://img.shields.io/badge/Flutter-3.x-blue?logo=flutter)
+![GetX](https://img.shields.io/badge/State_Management-GetX-purple)
+![Supabase](https://img.shields.io/badge/Supabase-Backend-3ecf8e?logo=supabase)
+![Google Maps](https://img.shields.io/badge/Google_Maps-Integration-4285F4?logo=google-maps)
 
-## 👨‍💻 Peran Anda: Frontend Developer
+</div>
 
-Sebagai **Frontend Developer** di proyek JeksoedV2, tanggung jawab dan fokus utama Anda meliputi:
+---
 
-1. **Implementasi UI/UX**: Menerjemahkan desain antarmuka menjadi kode Flutter yang responsif dan interaktif (misal: halaman `CreateOrderView`, `DriverMainView`, `TripView`, dsb).
-2. **State Management**: Mengelola alur data dan status antarmuka pengguna menggunakan **GetX**. Memastikan transisi antar *stage* (seperti `OrderStage.search`, `pickupConfirm`, `routeConfirm`, `findingDriver`) berjalan mulus dan sinkron dengan UI.
-3. **Integrasi Peta & Lokasi**: Mengimplementasikan Google Maps, menampilkan marker dinamis (penumpang dan pengemudi), menggambar rute (*polylines*), dan menyesuaikan tampilan *bottom sheet* (*DraggableScrollableSheet*) di atas peta.
-4. **Integrasi Backend (Supabase)**: Menghubungkan fungsi-fungsi frontend dengan layanan Supabase (seperti autentikasi pengguna, membaca/menulis data pesanan, dan mendengarkan perubahan status secara real-time).
-5. **Optimasi & Refactoring**: Memastikan kode frontend bersih, modular, dan mematuhi *best practices* di Flutter (mengurangi *dead code*, mengelola komponen *reusable*, dan menyelesaikan peringatan linter).
+## 📌 Tentang Proyek
 
-## 📁 Struktur Proyek (GetX Pattern)
+**JeksoedV2** adalah sistem *ride-hailing* lengkap yang memfasilitasi pengguna (penumpang) dan penyedia layanan (pengemudi) untuk terhubung secara real-time. Aplikasi ini berfokus pada manajemen perjalanan (*trip management*), integrasi database *real-time*, dan visualisasi *geolocation* presisi untuk menghadirkan pengalaman layaknya aplikasi ojek online profesional.
+
+## ✨ Fitur Utama
+
+- **Real-Time Ride Tracking**: Memantau lokasi pengemudi dan rute perjalanan secara langsung di atas peta interaktif menggunakan **Google Maps**.
+- **Responsive UI/UX**: Alur pesanan interaktif dengan *Draggable scrollable sheets* yang secara mulus memperbarui antarmuka berdasarkan tahapan pesanan pengguna (Mencari Pengemudi, Menunggu Jemputan, Perjalanan).
+- **Backend & Auth Terpusat**: Autentikasi yang aman dan penyimpanan sinkronisasi data yang didukung penuh oleh **Supabase Realtime**.
+- **Sistem Multi-Role**: Ekosistem dua sisi aplikasi yang efisien, menavigasikan penumpang dan pengemudi dalam satu *codebase* dengan pemisahan peran yang aman.
+
+---
+
+
+
+## 📁 Struktur Arsitektur (GetX Pattern)
+
+Kode *frontend* disusun menggunakan arsitektur fitur-modular, mengelompokkan komponen ke dalam domain bisnis mereka masing-masing:
 
 ```text
 lib/
 ├── app/
-│   ├── data/             # Model data dan Service API (Supabase, Maps API)
-│   ├── modules/          # Modul fitur utama aplikasi
-│   │   ├── auth/         # Autentikasi (Login, Register)
-│   │   ├── chat/         # Fitur obrolan pengemudi & penumpang
-│   │   ├── driver/       # Halaman dan fungsi khusus pengemudi
-│   │   ├── passenger/    # Halaman utama penumpang & pemesanan (Create Order)
-│   │   ├── rating/       # Sistem ulasan setelah perjalanan selesai
-│   │   ├── shared/       # Tampilan yang digunakan bersama (Profil, Aktivitas)
-│   │   └── trip/         # Manajemen perjalanan saat berlangsung
-│   └── routes/           # Definisi rute halaman GetX
-├── utils/                # Konstanta (AppColors), helper, formatter
-└── main.dart             # Entry point aplikasi
+│   ├── data/             # Definisi Model Data & Service Layer (Supabase, Maps API)
+│   ├── modules/          # Core Features (Diisolasi secara modular)
+│   │   ├── auth/         # Modul Registrasi & Login
+│   │   ├── chat/         # Obrolan In-App (Pengemudi-Penumpang)
+│   │   ├── driver/       # Tampilan Khusus Penerimaan Order Pengemudi
+│   │   ├── passenger/    # Tampilan Pemesanan Penumpang (Create Order)
+│   │   ├── trip/         # Visualisasi Perjalanan Real-time
+│   │   └── shared/       # Tampilan Bersama (Profil, Aktivitas)
+│   └── routes/           # Registrasi Sistem Rute GetX
+├── utils/                # Konstanta (AppColors), Konfigurasi Maps, Formatters
+└── main.dart             # Entry point & Inisialisasi Tema Aplikasi
 ```
 
 ## 🛠️ Cara Menjalankan Aplikasi
 
-1. Pastikan Anda telah menginstal [Flutter SDK](https://flutter.dev/docs/get-started/install).
-2. Lakukan clone repositori ini.
-3. Jalankan perintah untuk mengunduh dependencies:
+### Prasyarat Instalasi
+- [Flutter SDK](https://flutter.dev/docs/get-started/install) versi 3.x
+- Akun dan Proyek [Supabase](https://supabase.com)
+- Google Cloud Console API Key (untuk aktivasi Google Maps & Routes)
+
+### Langkah Eksekusi
+
+1. **Clone Repositori**:
+   ```bash
+   git clone https://github.com/Fawwzrf/JeksoedV2.git
+   cd jeksoedv2
+   ```
+
+2. **Instal Dependensi**:
    ```bash
    flutter pub get
    ```
-4. Hubungkan perangkat fisik atau jalankan emulator.
-5. Jalankan aplikasi:
+
+3. **Jalankan Aplikasi (Debug)**:
    ```bash
    flutter run
    ```
 
-## 🐞 Catatan Analisis Kode
+---
 
-Berdasarkan *Flutter Analyzer*, aplikasi ini sudah berjalan dan berhasil di-*compile* tanpa *error* fatal. Namun, ada beberapa peringatan *technical debt* yang perlu dibereskan di sisi frontend:
-- **Penggunaan `print`**: Terdapat banyak pemanggilan `print()` di *controller* yang sebaiknya diganti dengan *logger* atau dihapus di *production*.
-- **Dead Code**: Terdapat logika yang tidak pernah dieksekusi di `activity_view.dart`, `trip_passenger_sheet.dart`, dan `trip_completed_controller.dart` akibat *null check* yang berlebihan.
-- **Kesalahan Handler Future**: Pada `trip_controller.dart` baris 243, parameter `onError` me-return *void* padahal diharapkan mengembalikan nilai `FutureOr<Null>`.
-- **Metode *Deprecated***: Pembaruan fungsi-fungsi lama seperti `withOpacity` (gunakan `withValues`), `color` (gunakan `colorFilter`), dan `fromBytes` di `marker_utils.dart`.
+<div align="center">
+  Dibuat dengan ❤️ menggunakan Flutter & Supabase
+</div>
