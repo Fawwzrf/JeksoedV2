@@ -1,4 +1,4 @@
-# 🛵 JeksoedV2
+# JeksoedV2
 
 JeksoedV2 adalah aplikasi ride-hailing (ojek online) komprehensif yang dibangun menggunakan Flutter, GetX, dan Supabase untuk manajemen pesanan serta pelacakan lokasi real-time dengan Google Maps.
 
@@ -13,11 +13,11 @@ JeksoedV2 adalah aplikasi ride-hailing (ojek online) komprehensif yang dibangun 
 
 ---
 
-## 📌 Tentang Proyek
+## Tentang Proyek
 
 **JeksoedV2** adalah sistem *ride-hailing* lengkap yang memfasilitasi pengguna (penumpang) dan penyedia layanan (pengemudi) untuk terhubung secara real-time. Aplikasi ini berfokus pada manajemen perjalanan (*trip management*), integrasi database *real-time*, dan visualisasi *geolocation* presisi untuk menghadirkan pengalaman layaknya aplikasi ojek online profesional.
 
-## ✨ Fitur Utama
+## Fitur Utama
 
 - **Real-Time Ride Tracking**: Memantau lokasi pengemudi dan rute perjalanan secara langsung di atas peta interaktif menggunakan **Google Maps**.
 - **Responsive UI/UX**: Alur pesanan interaktif dengan *Draggable scrollable sheets* yang secara mulus memperbarui antarmuka berdasarkan tahapan pesanan pengguna (Mencari Pengemudi, Menunggu Jemputan, Perjalanan).
@@ -28,7 +28,7 @@ JeksoedV2 adalah aplikasi ride-hailing (ojek online) komprehensif yang dibangun 
 
 
 
-## 📁 Struktur Arsitektur (GetX Pattern)
+## Struktur Arsitektur (GetX Pattern)
 
 Kode *frontend* disusun menggunakan arsitektur fitur-modular, mengelompokkan komponen ke dalam domain bisnis mereka masing-masing:
 
@@ -48,7 +48,7 @@ lib/
 └── main.dart             # Entry point & Inisialisasi Tema Aplikasi
 ```
 
-## 🛠️ Cara Menjalankan Aplikasi
+## Cara Menjalankan Aplikasi
 
 ### Prasyarat Instalasi
 - [Flutter SDK](https://flutter.dev/docs/get-started/install) versi 3.x
